@@ -206,7 +206,8 @@ public:
         ("gps_gprmc")
         ("gps_time")
         ("gps_locked")
-        ("gps_servo");
+        ("gps_servo")
+        ("gps_sync_source_mode");
     return ret;
   }
 
@@ -224,8 +225,11 @@ public:
     else if(key == "gps_locked") {
         return sensor_value_t("GPS lock status", locked(), "locked", "unlocked");
     }
-    else if(key == "gps_servo") {
-        return sensor_value_t("GPS servo status", get_servo(), "");
+    else if (key == "gps_servo") {
+      return sensor_value_t("GPS servo status", get_servo(), "");
+    }
+    else if (key == "gps_sync_source_mode") {
+      return sensor_value_t("GPS Sync Source Mode", get_sync_source_mode(), "");
     }
     else {
         throw uhd::value_error("gps ctrl get_sensor unknown key: " + key);
@@ -249,6 +253,8 @@ private:
     _send("GPS:GPRMC 1\n");
      sleep(milliseconds(GPSDO_COMMAND_DELAY_MS));
     _send("SERV:TRAC 0\n");
+     sleep(milliseconds(GPSDO_COMMAND_DELAY_MS));
+     _send("SYNC:SOUR:MODE EXT\n");
      sleep(milliseconds(GPSDO_COMMAND_DELAY_MS));
   }
 
@@ -368,6 +374,40 @@ private:
         boost::this_thread::sleep(milliseconds(GPS_TIMEOUT_DELAY_MS));
     }
     throw uhd::value_error("get_stat(): no servo message found");
+  }
+
+
+  std::string get_sync_source_mode(void) {
+
+    _flush();
+    // Get current Sync Source Mode (Can be GPS, EXT or AUTO)
+    _send("SYNC:SOUR:MODE?\n");
+
+    //wait for _send(...) to return
+    sleep(milliseconds(GPSDO_COMMAND_DELAY_MS));
+
+    std::string sync_source_mode = "UNKNOWN";
+    //then we loop until we either timeout, or until we get a response 
+    const boost::system_time comm_timeout = boost::get_system_time() + milliseconds(GPS_COMM_TIMEOUT_MS);
+    while (boost::get_system_time() < comm_timeout) {
+      std::string reply = _recv();
+      if (reply.find("Command Error") != std::string::npos) {
+        break;
+      }
+      else if (reply.find("EXT") != std::string::npos) {
+        sync_source_mode = "EXTERNAL";
+        break;
+      }
+      else if (reply.find("GPS") != std::string::npos) {
+        sync_source_mode = "GPS";
+        break;
+      }
+      else if (reply.find("AUTO") != std::string::npos) {
+        sync_source_mode = "AUTO";
+        break;
+      }
+    }
+    return sync_source_mode;
   }
 
   uart_iface::sptr _uart;
