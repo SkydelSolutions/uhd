@@ -54,6 +54,16 @@ public:
    */
   virtual bool gps_detected(void) = 0;
 
+  /*!
+   * Get the sync source mode
+   */
+  virtual std::string get_sync_source_mode() = 0;
+
+  /*!
+   * Set the sync source mode, value must be one of "EXT", "GPS" or "AUTO"
+   */
+  virtual void set_sync_source_mode(const std::string& value) = 0;
+
   //TODO: other fun things you can do with a GPS.
 
 };

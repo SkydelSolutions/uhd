@@ -396,6 +396,47 @@ private:
     throw uhd::value_error("locked(): unable to determine GPS lock status");
   }
 
+  std::string get_sync_source_mode(void) {
+
+    _flush();
+    // Get current Sync Source Mode (Can be GPS, EXT or AUTO)
+    _send("SYNC:SOUR:MODE?\n");
+
+    //wait for _send(...) to return
+    sleep(milliseconds(GPSDO_COMMAND_DELAY_MS));
+
+    std::string sync_source_mode = "UNKNOWN";
+    //then we loop until we either timeout, or until we get a response 
+    const boost::system_time comm_timeout = boost::get_system_time() + milliseconds(GPS_COMM_TIMEOUT_MS);
+    while (boost::get_system_time() < comm_timeout) {
+      std::string reply = _recv();
+      if (reply.find("Command Error") != std::string::npos) {
+        break;
+      }
+      else if (reply.find("EXT") != std::string::npos) {
+        sync_source_mode = "EXT";
+        break;
+      }
+      else if (reply.find("GPS") != std::string::npos) {
+        sync_source_mode = "GPS";
+        break;
+      }
+      else if (reply.find("AUTO") != std::string::npos) {
+        sync_source_mode = "AUTO";
+        break;
+      }
+    }
+    return sync_source_mode;
+  }
+
+  void set_sync_source_mode(const std::string& value) {
+
+    if (value != "EXT" && value != "GPS" && value != "AUTO")
+      throw uhd::key_error("set_sync_source_mode(): invalid value");
+    _send("SYNC:SOUR:MODE " + value + '\n');
+    sleep(milliseconds(GPSDO_COMMAND_DELAY_MS));
+  }
+
   uart_iface::sptr _uart;
 
   void _flush(void){
