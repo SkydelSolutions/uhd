@@ -206,8 +206,7 @@ public:
         ("gps_gprmc")
         ("gps_time")
         ("gps_locked")
-        ("gps_servo")
-        ("gps_sync_source_mode");
+        ("gps_servo");
     return ret;
   }
 
@@ -227,9 +226,6 @@ public:
     }
     else if (key == "gps_servo") {
       return sensor_value_t("GPS servo status", get_servo(), "");
-    }
-    else if (key == "gps_sync_source_mode") {
-      return sensor_value_t("GPS Sync Source Mode", get_sync_source_mode(), "");
     }
     else {
         throw uhd::value_error("gps ctrl get_sensor unknown key: " + key);
@@ -253,8 +249,6 @@ private:
     _send("GPS:GPRMC 1\n");
      sleep(milliseconds(GPSDO_COMMAND_DELAY_MS));
     _send("SERV:TRAC 0\n");
-     sleep(milliseconds(GPSDO_COMMAND_DELAY_MS));
-     _send("SYNC:SOUR:MODE EXT\n");
      sleep(milliseconds(GPSDO_COMMAND_DELAY_MS));
   }
 
@@ -376,7 +370,6 @@ private:
     throw uhd::value_error("get_stat(): no servo message found");
   }
 
-
   std::string get_sync_source_mode(void) {
 
     _flush();
@@ -395,7 +388,7 @@ private:
         break;
       }
       else if (reply.find("EXT") != std::string::npos) {
-        sync_source_mode = "EXTERNAL";
+        sync_source_mode = "EXT";
         break;
       }
       else if (reply.find("GPS") != std::string::npos) {
@@ -408,6 +401,14 @@ private:
       }
     }
     return sync_source_mode;
+  }
+
+  void set_sync_source_mode(const std::string& value) {
+
+    if (value != "EXT" && value != "GPS" && value != "AUTO")
+      throw uhd::value_error("set_sync_source_mode(): invalid value");
+    _send("SYNC:SOUR:MODE " + value + '\n');
+    sleep(milliseconds(GPSDO_COMMAND_DELAY_MS));
   }
 
   uart_iface::sptr _uart;

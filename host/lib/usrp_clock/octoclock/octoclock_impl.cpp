@@ -272,6 +272,9 @@ octoclock_impl::octoclock_impl(const device_addr_t &_device_addr){
                         _tree->create<sensor_value_t>(oc_path / "sensors" / name)
                             .publish(boost::bind(&gps_ctrl::get_sensor, _oc_dict[oc].gps, name));
                     }
+                    _tree->create<std::string>(oc_path / "gps_sync_source_mode")
+                      .publish(boost::bind(&gps_ctrl::get_sync_source_mode, _oc_dict[oc].gps))
+                      .subscribe(boost::bind(&gps_ctrl::set_sync_source_mode, _oc_dict[oc].gps, _1));
                 }
                 else{
                     //If GPSDO communication failed, set gps_detected to false
