@@ -371,6 +371,8 @@ private:
   }
 
   std::string get_sync_source_mode(void) {
+    
+    bool has_timeout = true;
 
     _flush();
     // Get current Sync Source Mode (Can be GPS, EXT or AUTO)
@@ -385,21 +387,28 @@ private:
     while (boost::get_system_time() < comm_timeout) {
       std::string reply = _recv();
       if (reply.find("Command Error") != std::string::npos) {
+        UHD_MSG(warning) << "get_sync_source_mode:" << reply;
+        has_timeout = false;
         break;
       }
       else if (reply.find("EXT") != std::string::npos) {
+        has_timeout = false;
         sync_source_mode = "EXT";
         break;
       }
       else if (reply.find("GPS") != std::string::npos) {
+        has_timeout = false;
         sync_source_mode = "GPS";
         break;
       }
       else if (reply.find("AUTO") != std::string::npos) {
+        has_timeout = false;
         sync_source_mode = "AUTO";
         break;
       }
     }
+    if (has_timeout)
+      UHD_MSG(warning) << "get_sync_source_mode: Timeout";
     return sync_source_mode;
   }
 
