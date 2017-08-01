@@ -1391,7 +1391,7 @@ void x300_impl::update_clock_source(mboard_members_t &mb, const std::string &sou
     //* Currently the LMK can take as long as 30 seconds to lock to a reference but we don't
     //* want to wait that long during initialization.
     //TODO: Need to verify timeout and settings to make sure lock can be achieved in < 1.0 seconds
-    double timeout = mb.initialization_done ? 30.0 : 1.0;
+    double timeout = mb.initialization_done ? 5.0 : 1.0;
 
     //The programming code in x300_clock_ctrl is not compatible with revs <= 4 and may
     //lead to locking issues. So, disable the ref-locked check for older (unsupported) boards.
