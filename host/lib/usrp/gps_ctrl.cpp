@@ -412,7 +412,6 @@ private:
     const boost::system_time comm_timeout = boost::get_system_time() + milliseconds(GPS_COMM_TIMEOUT_MS);
     while (boost::get_system_time() < comm_timeout) {
       std::string reply = _recv();
-      UHD_MSG(status) << "received: [" << reply << "]\n";
       if (reply.find("Command Error") != std::string::npos) {
         UHD_MSG(warning) << "get_sync_source_mode: " << reply;
         has_timeout = false;
