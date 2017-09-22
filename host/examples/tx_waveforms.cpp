@@ -51,6 +51,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     uint64_t total_num_samps, spb;
     double rate, freq, gain, wave_freq, bw;
     float ampl;
+    int loop = 1;
 
     //setup the program options
     po::options_description desc("Allowed options");
@@ -73,6 +74,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("otw", po::value<std::string>(&otw)->default_value("sc16"), "specify the over-the-wire sample mode")
         ("channels", po::value<std::string>(&channel_list)->default_value("0"), "which channels to use (specify \"0\", \"1\", \"0,1\", etc)")
         ("int-n", "tune USRP with integer-N tuning")
+        ("loop", po::value<int>(&loop), "Number of loops")
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -84,191 +86,199 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         return ~0;
     }
 
-    //create a usrp device
-    std::cout << std::endl;
-    std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
-    uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
-
-    //detect which channels to use
-    std::vector<std::string> channel_strings;
-    std::vector<size_t> channel_nums;
-    boost::split(channel_strings, channel_list, boost::is_any_of("\"',"));
-    for(size_t ch = 0; ch < channel_strings.size(); ch++){
-        size_t chan = boost::lexical_cast<int>(channel_strings[ch]);
-        if(chan >= usrp->get_tx_num_channels())
-            throw std::runtime_error("Invalid channel(s) specified.");
-        else
-            channel_nums.push_back(boost::lexical_cast<int>(channel_strings[ch]));
-    }
-
-
-    //Lock mboard clocks
-    usrp->set_clock_source(ref);
-
-    //always select the subdevice first, the channel mapping affects the other settings
-    if (vm.count("subdev")) usrp->set_tx_subdev_spec(subdev);
-
-    std::cout << boost::format("Using Device: %s") % usrp->get_pp_string() << std::endl;
-
-    //set the sample rate
-    if (not vm.count("rate")){
-        std::cerr << "Please specify the sample rate with --rate" << std::endl;
-        return ~0;
-    }
-    std::cout << boost::format("Setting TX Rate: %f Msps...") % (rate/1e6) << std::endl;
-    usrp->set_tx_rate(rate);
-    std::cout << boost::format("Actual TX Rate: %f Msps...") % (usrp->get_tx_rate()/1e6) << std::endl << std::endl;
-
-    //set the center frequency
-    if (not vm.count("freq")){
-        std::cerr << "Please specify the center frequency with --freq" << std::endl;
-        return ~0;
-    }
-
-    for(size_t ch = 0; ch < channel_nums.size(); ch++) {
-        std::cout << boost::format("Setting TX Freq: %f MHz...") % (freq/1e6) << std::endl;
-        uhd::tune_request_t tune_request(freq);
-        if(vm.count("int-n")) tune_request.args = uhd::device_addr_t("mode_n=integer");
-        usrp->set_tx_freq(tune_request, channel_nums[ch]);
-        std::cout << boost::format("Actual TX Freq: %f MHz...") % (usrp->get_tx_freq(channel_nums[ch])/1e6) << std::endl << std::endl;
-
-        //set the rf gain
-        if (vm.count("gain")){
-            std::cout << boost::format("Setting TX Gain: %f dB...") % gain << std::endl;
-            usrp->set_tx_gain(gain, channel_nums[ch]);
-            std::cout << boost::format("Actual TX Gain: %f dB...") % usrp->get_tx_gain(channel_nums[ch]) << std::endl << std::endl;
-        }
-
-        //set the analog frontend filter bandwidth
-        if (vm.count("bw")){
-            std::cout << boost::format("Setting TX Bandwidth: %f MHz...") % bw << std::endl;
-            usrp->set_tx_bandwidth(bw, channel_nums[ch]);
-            std::cout << boost::format("Actual TX Bandwidth: %f MHz...") % usrp->get_tx_bandwidth(channel_nums[ch]) << std::endl << std::endl;
-        }
-
-        //set the antenna
-        if (vm.count("ant")) usrp->set_tx_antenna(ant, channel_nums[ch]);
-    }
-
-    boost::this_thread::sleep(boost::posix_time::seconds(1)); //allow for some setup time
-
-    //for the const wave, set the wave freq for small samples per period
-    if (wave_freq == 0 and wave_type == "CONST"){
-        wave_freq = usrp->get_tx_rate()/2;
-    }
-
-    //error when the waveform is not possible to generate
-    if (std::abs(wave_freq) > usrp->get_tx_rate()/2){
-        throw std::runtime_error("wave freq out of Nyquist zone");
-    }
-    if (usrp->get_tx_rate()/std::abs(wave_freq) > wave_table_len/2){
-        throw std::runtime_error("wave freq too small for table");
-    }
-
-    //pre-compute the waveform values
-    const wave_table_class wave_table(wave_type, ampl);
-    const size_t step = boost::math::iround(wave_freq/usrp->get_tx_rate() * wave_table_len);
-    size_t index = 0;
-
-    //create a transmit streamer
-    //linearly map channels (index0 = channel0, index1 = channel1, ...)
-    uhd::stream_args_t stream_args("fc32", otw);
-    stream_args.channels = channel_nums;
-    uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
-
-    //allocate a buffer which we re-use for each channel
-    if (spb == 0) spb = tx_stream->get_max_num_samps()*10;
-    std::vector<std::complex<float> > buff(spb);
-    std::vector<std::complex<float> *> buffs(channel_nums.size(), &buff.front());
-
-    std::cout << boost::format("Setting device timestamp to 0...") << std::endl;
-    if (channel_nums.size() > 1)
+    for (int curLoop = 0; curLoop < loop; curLoop++)
     {
-        // Sync times
-        if (pps == "mimo")
+        std::cout << "CUR LOOP: " << curLoop << std::endl;
+
+        //create a usrp device
+        std::cout << std::endl;
+        std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
+        uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+
+        //detect which channels to use
+        std::vector<std::string> channel_strings;
+        std::vector<size_t> channel_nums;
+        boost::split(channel_strings, channel_list, boost::is_any_of("\"',"));
+        for(size_t ch = 0; ch < channel_strings.size(); ch++){
+            size_t chan = boost::lexical_cast<int>(channel_strings[ch]);
+            if(chan >= usrp->get_tx_num_channels())
+                throw std::runtime_error("Invalid channel(s) specified.");
+            else
+                channel_nums.push_back(boost::lexical_cast<int>(channel_strings[ch]));
+        }
+
+
+        //Lock mboard clocks
+        usrp->set_clock_source(ref);
+
+        //always select the subdevice first, the channel mapping affects the other settings
+        if (vm.count("subdev")) usrp->set_tx_subdev_spec(subdev);
+
+        std::cout << boost::format("Using Device: %s") % usrp->get_pp_string() << std::endl;
+
+        //set the sample rate
+        if (not vm.count("rate")){
+            std::cerr << "Please specify the sample rate with --rate" << std::endl;
+            return ~0;
+        }
+        std::cout << boost::format("Setting TX Rate: %f Msps...") % (rate/1e6) << std::endl;
+        usrp->set_tx_rate(rate);
+        std::cout << boost::format("Actual TX Rate: %f Msps...") % (usrp->get_tx_rate()/1e6) << std::endl << std::endl;
+
+        //set the center frequency
+        if (not vm.count("freq")){
+            std::cerr << "Please specify the center frequency with --freq" << std::endl;
+            return ~0;
+        }
+
+        for(size_t ch = 0; ch < channel_nums.size(); ch++) {
+            std::cout << boost::format("Setting TX Freq: %f MHz...") % (freq/1e6) << std::endl;
+            uhd::tune_request_t tune_request(freq);
+            if(vm.count("int-n")) tune_request.args = uhd::device_addr_t("mode_n=integer");
+            usrp->set_tx_freq(tune_request, channel_nums[ch]);
+            std::cout << boost::format("Actual TX Freq: %f MHz...") % (usrp->get_tx_freq(channel_nums[ch])/1e6) << std::endl << std::endl;
+
+            //set the rf gain
+            if (vm.count("gain")){
+                std::cout << boost::format("Setting TX Gain: %f dB...") % gain << std::endl;
+                usrp->set_tx_gain(gain, channel_nums[ch]);
+                std::cout << boost::format("Actual TX Gain: %f dB...") % usrp->get_tx_gain(channel_nums[ch]) << std::endl << std::endl;
+            }
+
+            //set the analog frontend filter bandwidth
+            if (vm.count("bw")){
+                std::cout << boost::format("Setting TX Bandwidth: %f MHz...") % bw << std::endl;
+                usrp->set_tx_bandwidth(bw, channel_nums[ch]);
+                std::cout << boost::format("Actual TX Bandwidth: %f MHz...") % usrp->get_tx_bandwidth(channel_nums[ch]) << std::endl << std::endl;
+            }
+
+            //set the antenna
+            if (vm.count("ant")) usrp->set_tx_antenna(ant, channel_nums[ch]);
+        }
+
+        boost::this_thread::sleep(boost::posix_time::seconds(1)); //allow for some setup time
+
+        //for the const wave, set the wave freq for small samples per period
+        if (wave_freq == 0 and wave_type == "CONST"){
+            wave_freq = usrp->get_tx_rate()/2;
+        }
+
+        //error when the waveform is not possible to generate
+        if (std::abs(wave_freq) > usrp->get_tx_rate()/2){
+            throw std::runtime_error("wave freq out of Nyquist zone");
+        }
+        if (usrp->get_tx_rate()/std::abs(wave_freq) > wave_table_len/2){
+            throw std::runtime_error("wave freq too small for table");
+        }
+
+        //pre-compute the waveform values
+        const wave_table_class wave_table(wave_type, ampl);
+        const size_t step = boost::math::iround(wave_freq/usrp->get_tx_rate() * wave_table_len);
+        size_t index = 0;
+
+        //create a transmit streamer
+        //linearly map channels (index0 = channel0, index1 = channel1, ...)
+        uhd::stream_args_t stream_args("fc32", otw);
+        stream_args.channels = channel_nums;
+        uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
+
+        //allocate a buffer which we re-use for each channel
+        if (spb == 0) spb = tx_stream->get_max_num_samps()*10;
+        std::vector<std::complex<float> > buff(spb);
+        std::vector<std::complex<float> *> buffs(channel_nums.size(), &buff.front());
+
+        std::cout << boost::format("Setting device timestamp to 0...") << std::endl;
+        if (channel_nums.size() > 1)
         {
-            UHD_ASSERT_THROW(usrp->get_num_mboards() == 2);
+            // Sync times
+            if (pps == "mimo")
+            {
+                UHD_ASSERT_THROW(usrp->get_num_mboards() == 2);
 
-            //make mboard 1 a slave over the MIMO Cable
-            usrp->set_time_source("mimo", 1);
+                //make mboard 1 a slave over the MIMO Cable
+                usrp->set_time_source("mimo", 1);
 
-            //set time on the master (mboard 0)
-            usrp->set_time_now(uhd::time_spec_t(0.0), 0);
+                //set time on the master (mboard 0)
+                usrp->set_time_now(uhd::time_spec_t(0.0), 0);
 
-            //sleep a bit while the slave locks its time to the master
-            boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+                //sleep a bit while the slave locks its time to the master
+                boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+            }
+            else
+            {
+                if (pps == "internal" or pps == "external" or pps == "gpsdo")
+                    usrp->set_time_source(pps);
+                usrp->set_time_unknown_pps(uhd::time_spec_t(0.0));
+                boost::this_thread::sleep(boost::posix_time::seconds(1)); //wait for pps sync pulse
+            }
         }
         else
         {
-            if (pps == "internal" or pps == "external" or pps == "gpsdo")
-                usrp->set_time_source(pps);
-            usrp->set_time_unknown_pps(uhd::time_spec_t(0.0));
-            boost::this_thread::sleep(boost::posix_time::seconds(1)); //wait for pps sync pulse
-        }
-    }
-    else
-    {
-        usrp->set_time_now(0.0);
-    }
-
-    //Check Ref and LO Lock detect
-    std::vector<std::string> sensor_names;
-    const size_t tx_sensor_chan = channel_list.empty() ? 0 : boost::lexical_cast<size_t>(channel_list[0]);
-    sensor_names = usrp->get_tx_sensor_names(tx_sensor_chan);
-    if (std::find(sensor_names.begin(), sensor_names.end(), "lo_locked") != sensor_names.end()) {
-        uhd::sensor_value_t lo_locked = usrp->get_tx_sensor("lo_locked", tx_sensor_chan);
-        std::cout << boost::format("Checking TX: %s ...") % lo_locked.to_pp_string() << std::endl;
-        UHD_ASSERT_THROW(lo_locked.to_bool());
-    }
-    const size_t mboard_sensor_idx = 0;
-    sensor_names = usrp->get_mboard_sensor_names(mboard_sensor_idx);
-    if ((ref == "mimo") and (std::find(sensor_names.begin(), sensor_names.end(), "mimo_locked") != sensor_names.end())) {
-        uhd::sensor_value_t mimo_locked = usrp->get_mboard_sensor("mimo_locked", mboard_sensor_idx);
-        std::cout << boost::format("Checking TX: %s ...") % mimo_locked.to_pp_string() << std::endl;
-        UHD_ASSERT_THROW(mimo_locked.to_bool());
-    }
-    if ((ref == "external") and (std::find(sensor_names.begin(), sensor_names.end(), "ref_locked") != sensor_names.end())) {
-        uhd::sensor_value_t ref_locked = usrp->get_mboard_sensor("ref_locked", mboard_sensor_idx);
-        std::cout << boost::format("Checking TX: %s ...") % ref_locked.to_pp_string() << std::endl;
-        UHD_ASSERT_THROW(ref_locked.to_bool());
-    }
-
-    std::signal(SIGINT, &sig_int_handler);
-    std::cout << "Press Ctrl + C to stop streaming..." << std::endl;
-
-    // Set up metadata. We start streaming a bit in the future
-    // to allow MIMO operation:
-    uhd::tx_metadata_t md;
-    md.start_of_burst = true;
-    md.end_of_burst   = false;
-    md.has_time_spec  = true;
-    md.time_spec = usrp->get_time_now() + uhd::time_spec_t(0.1);
-
-    //send data until the signal handler gets called
-    //or if we accumulate the number of samples specified (unless it's 0)
-    uint64_t num_acc_samps = 0;
-    while(true){
-
-        if (stop_signal_called) break;
-        if (total_num_samps > 0 and num_acc_samps >= total_num_samps) break;
-
-        //fill the buffer with the waveform
-        for (size_t n = 0; n < buff.size(); n++){
-            buff[n] = wave_table(index += step);
+            usrp->set_time_now(0.0);
         }
 
-        //send the entire contents of the buffer
-        num_acc_samps += tx_stream->send(
-            buffs, buff.size(), md
-        );
+        //Check Ref and LO Lock detect
+        std::vector<std::string> sensor_names;
+        const size_t tx_sensor_chan = channel_list.empty() ? 0 : boost::lexical_cast<size_t>(channel_list[0]);
+        sensor_names = usrp->get_tx_sensor_names(tx_sensor_chan);
+        if (std::find(sensor_names.begin(), sensor_names.end(), "lo_locked") != sensor_names.end()) {
+            uhd::sensor_value_t lo_locked = usrp->get_tx_sensor("lo_locked", tx_sensor_chan);
+            std::cout << boost::format("Checking TX: %s ...") % lo_locked.to_pp_string() << std::endl;
+            UHD_ASSERT_THROW(lo_locked.to_bool());
+        }
+        const size_t mboard_sensor_idx = 0;
+        sensor_names = usrp->get_mboard_sensor_names(mboard_sensor_idx);
+        if ((ref == "mimo") and (std::find(sensor_names.begin(), sensor_names.end(), "mimo_locked") != sensor_names.end())) {
+            uhd::sensor_value_t mimo_locked = usrp->get_mboard_sensor("mimo_locked", mboard_sensor_idx);
+            std::cout << boost::format("Checking TX: %s ...") % mimo_locked.to_pp_string() << std::endl;
+            UHD_ASSERT_THROW(mimo_locked.to_bool());
+        }
+        if ((ref == "external") and (std::find(sensor_names.begin(), sensor_names.end(), "ref_locked") != sensor_names.end())) {
+            uhd::sensor_value_t ref_locked = usrp->get_mboard_sensor("ref_locked", mboard_sensor_idx);
+            std::cout << boost::format("Checking TX: %s ...") % ref_locked.to_pp_string() << std::endl;
+            UHD_ASSERT_THROW(ref_locked.to_bool());
+        }
 
-        md.start_of_burst = false;
-        md.has_time_spec = false;
+        std::signal(SIGINT, &sig_int_handler);
+        std::cout << "Press Ctrl + C to stop streaming..." << std::endl;
+
+        // Set up metadata. We start streaming a bit in the future
+        // to allow MIMO operation:
+        uhd::tx_metadata_t md;
+        md.start_of_burst = true;
+        md.end_of_burst   = false;
+        md.has_time_spec  = true;
+        md.time_spec = usrp->get_time_now() + uhd::time_spec_t(0.1);
+
+        //send data until the signal handler gets called
+        //or if we accumulate the number of samples specified (unless it's 0)
+        uint64_t num_acc_samps = 0;
+        uint64_t samples = 0;
+        while(true){
+
+            if (stop_signal_called) break;
+            if (total_num_samps > 0 and num_acc_samps >= total_num_samps) break;
+
+            //fill the buffer with the waveform
+            for (size_t n = 0; n < buff.size(); n++){
+                buff[n] = wave_table(index += step);
+            }
+
+            //send the entire contents of the buffer
+            num_acc_samps += tx_stream->send(
+                buffs, buff.size(), md
+            );
+
+            md.start_of_burst = false;
+            md.has_time_spec = false;
+
+            samples += num_acc_samps;
+        }
+
+        //send a mini EOB packet
+        md.end_of_burst = true;
+        tx_stream->send("", 0, md);
     }
-
-    //send a mini EOB packet
-    md.end_of_burst = true;
-    tx_stream->send("", 0, md);
 
     //finished
     std::cout << std::endl << "Done!" << std::endl << std::endl;
