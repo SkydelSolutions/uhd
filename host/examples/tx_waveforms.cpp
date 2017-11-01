@@ -49,7 +49,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     //variables to be set by po
     std::string args, wave_type, ant, subdev, ref, pps, otw, channel_list;
     uint64_t total_num_samps, spb;
-    double rate, freq, gain, wave_freq, bw;
+    double rate, freq, gain, wave_freq, bw, lo_offset;
     float ampl;
     int loop = 1;
 
@@ -62,6 +62,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("nsamps", po::value<uint64_t>(&total_num_samps)->default_value(0), "total number of samples to transmit")
         ("rate", po::value<double>(&rate), "rate of outgoing samples")
         ("freq", po::value<double>(&freq), "RF center frequency in Hz")
+        ("lo_offset", po::value<double>(&lo_offset), "RF LO Offset in Hz")
         ("ampl", po::value<float>(&ampl)->default_value(float(0.3)), "amplitude of the waveform [0 to 0.7]")
         ("gain", po::value<double>(&gain), "gain for the RF chain")
         ("ant", po::value<std::string>(&ant), "antenna selection")
@@ -132,8 +133,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         }
 
         for(size_t ch = 0; ch < channel_nums.size(); ch++) {
-            std::cout << boost::format("Setting TX Freq: %f MHz...") % (freq/1e6) << std::endl;
-            uhd::tune_request_t tune_request(freq);
+            std::cout << boost::format("Setting TX Freq: %f MHz, with LO Offset: %f MHz") % (freq/1e6) % (lo_offset/1e6) << std::endl;
+            uhd::tune_request_t tune_request(freq, lo_offset);
             if(vm.count("int-n")) tune_request.args = uhd::device_addr_t("mode_n=integer");
             usrp->set_tx_freq(tune_request, channel_nums[ch]);
             std::cout << boost::format("Actual TX Freq: %f MHz...") % (usrp->get_tx_freq(channel_nums[ch])/1e6) << std::endl << std::endl;
@@ -253,11 +254,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         //send data until the signal handler gets called
         //or if we accumulate the number of samples specified (unless it's 0)
         uint64_t num_acc_samps = 0;
-        uint64_t samples = 0;
-        while(true){
-
+        while(num_acc_samps < rate*10)
+        {
             if (stop_signal_called) break;
-            if (total_num_samps > 0 and num_acc_samps >= total_num_samps) break;
+            //if (total_num_samps > 0 and num_acc_samps >= total_num_samps) break;
 
             //fill the buffer with the waveform
             for (size_t n = 0; n < buff.size(); n++){
@@ -271,8 +271,6 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
             md.start_of_burst = false;
             md.has_time_spec = false;
-
-            samples += num_acc_samps;
         }
 
         //send a mini EOB packet
