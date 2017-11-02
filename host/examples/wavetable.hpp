@@ -29,10 +29,10 @@ public:
         _wave_table(wave_table_len)
     {
         //compute real wave table with 1.0 amplitude
-        std::vector<double> real_wave_table(wave_table_len);
+        std::vector<short> real_wave_table(wave_table_len);
         if (wave_type == "CONST"){
             for (size_t i = 0; i < wave_table_len; i++)
-                real_wave_table[i] = 1.0;
+                real_wave_table[i] = 0x7FFF;
         }
         else if (wave_type == "SQUARE"){
             for (size_t i = 0; i < wave_table_len; i++)
@@ -45,22 +45,22 @@ public:
         else if (wave_type == "SINE"){
             static const double tau = 2*std::acos(-1.0);
             for (size_t i = 0; i < wave_table_len; i++)
-                real_wave_table[i] = std::sin((tau*i)/wave_table_len);
+                real_wave_table[i] = (short)std::sin((tau*i)/wave_table_len);
         }
         else throw std::runtime_error("unknown waveform type: " + wave_type);
 
         //compute i and q pairs with 90% offset and scale to amplitude
         for (size_t i = 0; i < wave_table_len; i++){
-            const size_t q = (i+(3*wave_table_len)/4)%wave_table_len;
-            _wave_table[i] = std::complex<float>(ampl*real_wave_table[i], ampl*real_wave_table[q]);
+            //const size_t q = (i+(3*wave_table_len)/4)%wave_table_len;
+            _wave_table[i] = std::complex<short>(ampl*real_wave_table[i], 0);
         }
     }
 
-    inline std::complex<float> operator()(const size_t index) const{
+    inline std::complex<short> operator()(const size_t index) const{
         return _wave_table[index % wave_table_len];
     }
 
 private:
-    std::vector<std::complex<float> > _wave_table;
+    std::vector<std::complex<short> > _wave_table;
 };
 
