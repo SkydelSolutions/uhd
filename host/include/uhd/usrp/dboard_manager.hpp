@@ -1,5 +1,5 @@
 //
-// Copyright 2010 Ettus Research LLC
+// Copyright 2010,2017 Ettus Research, A National Instruments Company
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <uhd/property_tree.hpp>
 #include <uhd/usrp/dboard_base.hpp>
 #include <uhd/usrp/dboard_id.hpp>
+#include <uhd/usrp/dboard_eeprom.hpp>
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 #include <string>
@@ -131,6 +132,25 @@ public:
         dboard_id_t rx_dboard_id,
         dboard_id_t tx_dboard_id,
         dboard_id_t gdboard_id,
+        dboard_iface::sptr iface,
+        property_tree::sptr subtree,
+        bool defer_db_init = false
+    );
+
+    /*!
+     * Make a new dboard manager.
+     * \param rx_eeprom the RX EEPROM data
+     * \param tx_eeprom the TX EEPROM data
+     * \param gdb_eeprom the grand-dboard EEPROM data
+     * \param iface the custom dboard interface
+     * \param subtree the subtree to load with props
+     * \param defer_db_init initialising the daughterboards (DEPRECATED)
+     * \return an sptr to the new dboard manager
+     */
+    static sptr make(
+        dboard_eeprom_t rx_eeprom,
+        dboard_eeprom_t tx_eeprom,
+        dboard_eeprom_t gdb_eeprom,
         dboard_iface::sptr iface,
         property_tree::sptr subtree,
         bool defer_db_init = false
