@@ -45,7 +45,7 @@ public:
         _file_lock = NULL;
 
         //set the default log level
-        level = uhd::_log::never;
+        level = uhd::_log::none;
 
         //allow override from macro definition
         #ifdef UHD_LOG_LEVEL
@@ -79,7 +79,7 @@ private:
     //! set the log level from a string that is either a digit or an enum name
     void _set_log_level(const std::string &log_level_str){
         const uhd::_log::verbosity_t log_level_num = uhd::_log::verbosity_t(log_level_str[0]-'0');
-        if (std::isdigit(log_level_str[0]) and log_level_num >= uhd::_log::always and log_level_num <= uhd::_log::never){
+        if (std::isdigit(log_level_str[0]) and log_level_num >= uhd::_log::always and log_level_num <= uhd::_log::none){
             this->level = log_level_num;
             return;
         }
@@ -90,6 +90,7 @@ private:
         if_lls_equal(rarely);
         if_lls_equal(very_rarely);
         if_lls_equal(never);
+	if_lls_equal(none);
     }
 
     //file stream and lock:
@@ -154,9 +155,9 @@ uhd::_log::log::~log(void)
          * Critical behavior below.
          * The following steps must happen in order to avoid a lock-up condition.
          * This is because the message facility will call into the logging facility.
-         * Therefore we must disable the logger (level = never) before messaging.
+         * Therefore we must disable the logger (level = none) before messaging.
          */
-        log_rs().level = never;
+        log_rs().level = none;
         UHD_MSG(error)
             << "Logging failed: " << e.what() << std::endl
             << "Logging has been disabled for this process" << std::endl
