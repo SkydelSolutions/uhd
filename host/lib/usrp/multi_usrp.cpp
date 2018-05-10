@@ -1934,10 +1934,532 @@ multi_usrp::~multi_usrp(void){
     /* NOP */
 }
 
+#include <thread>
+
+std::ostream& operator<<(std::ostream& out, const stream_args_t& args)
+{
+  out << "{cpu=" << args.cpu_format << ", otw=" << args.otw_format << ", args=" << args.args.to_pp_string() << ", cannels=[";
+  for (size_t i = 0; i < args.channels.size(); ++i)
+  {
+    if (i > 0)
+      out << ',';
+    out << args.channels[i];
+  }
+  return out << "]}";
+}
+
+std::ostream& operator<<(std::ostream& out, const tune_request_t& req)
+{
+  return out << "{target_freq=" << req.target_freq << ", rf_freq_policy=" << req.rf_freq_policy << ", rf_freq=" << req.rf_freq << ", dsp_freq_policy=" << req.dsp_freq_policy << ", dsp_freq=" << req.dsp_freq << ", args=" << req.args.to_pp_string() << "}";
+}
+
+std::ostream& operator<<(std::ostream& out, const usrp::subdev_spec_t& spec)
+{
+  return out << spec.to_pp_string();
+}
+
+std::ostream& operator<<(std::ostream& out, const clock_config_t& clock)
+{
+  return out << "{ref_source=" << clock.ref_source << ", pps_source=" << clock.pps_source << ", pps_ploarity=" << clock.pps_polarity << '}';
+}
+
+std::ostream& operator<<(std::ostream& out, const time_spec_t& time)
+{
+  return out << time.get_real_secs();
+}
+
+std::ostream& operator<<(std::ostream& out, const stream_cmd_t& cmd)
+{
+  return out << "{stream_mode=" << cmd.stream_mode << ", num_samps=" << cmd.num_samps << ", stream_now=" << cmd.stream_now << ", time_spec=" << cmd.time_spec << '}';
+}
+
+template<bool first, typename... TArgs>
+struct print_args
+{
+  static inline void print(std::ostream&, TArgs&&...) {}
+};
+
+template<bool first, typename T, typename... TArgs>
+struct print_args<first, T, TArgs...>
+{
+  static inline void print(std::ostream& out, T&& arg, TArgs&&... args)
+  {
+    if (!first)
+      out << ", ";
+    out << std::forward<T>(arg);
+    print_args<false, TArgs...>::print(out, std::forward<TArgs>(args)...);
+  }
+};
+
+template<typename... TArgs>
+void uhd_debug_log(const char* method_name, TArgs&&... args)
+{
+  uhd::msg::_msg msg(uhd::msg::status);
+  std::ostream& out = msg();
+
+  out << "UHD call from thread " << std::this_thread::get_id() << ": " << method_name << '(';
+  print_args<true, TArgs...>::print(out, std::forward<TArgs>(args)...);
+  out << ')';
+}
+
+#define UHD_DEBUG_LOG(method, ...) \
+uhd_debug_log(#method, __VA_ARGS__); \
+return multi_usrp_impl::method(__VA_ARGS__)
+
+class multi_usrp_debug : public multi_usrp_impl
+{
+public:
+  multi_usrp_debug(const device_addr_t& dev_addr)
+    : multi_usrp_impl(dev_addr)
+  {}
+
+  virtual device::sptr get_device(void) override
+  {
+    UHD_DEBUG_LOG(get_device);
+  }
+  virtual rx_streamer::sptr get_rx_stream(const stream_args_t & args) override
+  {
+    UHD_DEBUG_LOG(get_rx_stream, args);
+  }
+  virtual tx_streamer::sptr get_tx_stream(const stream_args_t & args) override
+  {
+    UHD_DEBUG_LOG(get_tx_stream, args);
+  }
+  virtual dict<std::string, std::string> get_usrp_rx_info(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_usrp_rx_info, chan);
+  }
+  virtual dict<std::string, std::string> get_usrp_tx_info(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_usrp_tx_info, chan);
+  }
+  virtual void set_master_clock_rate(double rate, size_t mboard) override
+  {
+    UHD_DEBUG_LOG(set_master_clock_rate, rate, mboard);
+  }
+  virtual double get_master_clock_rate(size_t mboard) override
+  {
+    UHD_DEBUG_LOG(get_master_clock_rate, mboard);
+  }
+  virtual std::string get_pp_string(void) override
+  {
+    UHD_DEBUG_LOG(get_pp_string);
+  }
+  virtual std::string get_mboard_name(size_t mboard) override
+  {
+    UHD_DEBUG_LOG(get_mboard_name, mboard);
+  }
+  virtual time_spec_t get_time_now(size_t mboard) override
+  {
+    UHD_DEBUG_LOG(get_time_now, mboard);
+  }
+  virtual time_spec_t get_time_last_pps(size_t mboard) override
+  {
+    UHD_DEBUG_LOG(get_time_last_pps, mboard);
+  }
+  virtual void set_time_now(const time_spec_t & time_spec, size_t mboard) override
+  {
+    UHD_DEBUG_LOG(set_time_now, time_spec, mboard);
+  }
+  virtual void set_time_next_pps(const time_spec_t & time_spec, size_t mboard) override
+  {
+    UHD_DEBUG_LOG(set_time_next_pps, time_spec, mboard);
+  }
+  virtual void set_time_unknown_pps(const time_spec_t & time_spec) override
+  {
+    UHD_DEBUG_LOG(set_time_unknown_pps, time_spec);
+  }
+  virtual bool get_time_synchronized(void) override
+  {
+    UHD_DEBUG_LOG(get_time_synchronized);
+  }
+  virtual void set_command_time(const uhd::time_spec_t & time_spec, size_t mboard) override
+  {
+    UHD_DEBUG_LOG(set_command_time, time_spec, mboard);
+  }
+  virtual void clear_command_time(size_t mboard) override
+  {
+    UHD_DEBUG_LOG(clear_command_time, mboard);
+  }
+  virtual void issue_stream_cmd(const stream_cmd_t & stream_cmd, size_t chan) override
+  {
+    UHD_DEBUG_LOG(issue_stream_cmd, stream_cmd, chan);
+  }
+  virtual void set_clock_config(const clock_config_t & clock_config, size_t mboard) override
+  {
+    UHD_DEBUG_LOG(set_clock_config, clock_config, mboard);
+  }
+  virtual void set_time_source(const std::string & source, const size_t mboard) override
+  {
+    UHD_DEBUG_LOG(set_time_source, source, mboard);
+  }
+  virtual std::string get_time_source(const size_t mboard) override
+  {
+    UHD_DEBUG_LOG(get_time_source, mboard);
+  }
+  virtual std::vector<std::string> get_time_sources(const size_t mboard) override
+  {
+    UHD_DEBUG_LOG(get_time_sources, mboard);
+  }
+  virtual void set_clock_source(const std::string & source, const size_t mboard) override
+  {
+    UHD_DEBUG_LOG(set_clock_source, source, mboard);
+  }
+  virtual std::string get_clock_source(const size_t mboard) override
+  {
+    UHD_DEBUG_LOG(get_clock_source, mboard);
+  }
+  virtual std::vector<std::string> get_clock_sources(const size_t mboard) override
+  {
+    UHD_DEBUG_LOG(get_clock_sources, mboard);
+  }
+  virtual void set_clock_source_out(const bool enb, const size_t mboard) override
+  {
+    UHD_DEBUG_LOG(set_clock_source_out, enb, mboard);
+  }
+  virtual void set_time_source_out(const bool enb, const size_t mboard) override
+  {
+    UHD_DEBUG_LOG(set_time_source_out, enb, mboard);
+  }
+  virtual size_t get_num_mboards(void) override
+  {
+    UHD_DEBUG_LOG(get_num_mboards);
+  }
+  virtual sensor_value_t get_mboard_sensor(const std::string & name, size_t mboard) override
+  {
+    UHD_DEBUG_LOG(get_mboard_sensor, name, mboard);
+  }
+  virtual std::vector<std::string> get_mboard_sensor_names(size_t mboard) override
+  {
+    UHD_DEBUG_LOG(get_mboard_sensor_names, mboard);
+  }
+  virtual void set_user_register(const uint8_t addr, const uint32_t data, size_t mboard) override
+  {
+    UHD_DEBUG_LOG(set_user_register, addr, data, mboard);
+  }
+  virtual void set_rx_subdev_spec(const uhd::usrp::subdev_spec_t & spec, size_t mboard) override
+  {
+    UHD_DEBUG_LOG(set_rx_subdev_spec, spec, mboard);
+  }
+  virtual uhd::usrp::subdev_spec_t get_rx_subdev_spec(size_t mboard) override
+  {
+    UHD_DEBUG_LOG(get_rx_subdev_spec, mboard);
+  }
+  virtual size_t get_rx_num_channels(void) override
+  {
+    UHD_DEBUG_LOG(get_rx_num_channels);
+  }
+  virtual std::string get_rx_subdev_name(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_subdev_name, chan);
+  }
+  virtual void set_rx_rate(double rate, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_rx_rate, rate, chan);
+  }
+  virtual double get_rx_rate(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_rate, chan);
+  }
+  virtual meta_range_t get_rx_rates(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_rates, chan);
+  }
+  virtual tune_result_t set_rx_freq(const tune_request_t & tune_request, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_rx_freq, tune_request, chan);
+  }
+  virtual double get_rx_freq(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_freq, chan);
+  }
+  virtual freq_range_t get_rx_freq_range(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_freq_range, chan);
+  }
+  virtual freq_range_t get_fe_rx_freq_range(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_fe_rx_freq_range, chan);
+  }
+  virtual std::vector<std::string> get_rx_lo_names(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_lo_names, chan);
+  }
+  virtual void set_rx_lo_source(const std::string &src, const std::string &name = ALL_LOS, size_t chan = 0) override
+  {
+    UHD_DEBUG_LOG(set_rx_lo_source, src, name, chan);
+  }
+  virtual const std::string get_rx_lo_source(const std::string &name = ALL_LOS, size_t chan = 0) override
+  {
+    UHD_DEBUG_LOG(get_rx_lo_source, name, chan);
+  }
+  virtual std::vector<std::string> get_rx_lo_sources(const std::string &name = ALL_LOS, size_t chan = 0) override
+  {
+    UHD_DEBUG_LOG(get_rx_lo_sources, name, chan);
+  }
+  virtual void set_rx_lo_export_enabled(bool enabled, const std::string &name = ALL_LOS, size_t chan = 0) override
+  {
+    UHD_DEBUG_LOG(set_rx_lo_export_enabled, enabled, name, chan);
+  }
+  virtual bool get_rx_lo_export_enabled(const std::string &name = ALL_LOS, size_t chan = 0) override
+  {
+    UHD_DEBUG_LOG(get_rx_lo_export_enabled, name, chan);
+  }
+  virtual double set_rx_lo_freq(double freq, const std::string & name, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_rx_lo_freq, freq, name, chan);
+  }
+  virtual double get_rx_lo_freq(const std::string & name, size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_lo_freq, name, chan);
+  }
+  virtual freq_range_t get_rx_lo_freq_range(const std::string & name, size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_lo_freq_range, name, chan);
+  }
+  virtual void set_rx_gain(double gain, const std::string & name, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_rx_gain, gain, name, chan);
+  }
+  virtual void set_normalized_rx_gain(double gain, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_normalized_rx_gain, gain, chan);
+  }
+  virtual void set_rx_agc(bool enable, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_rx_agc, enable, chan);
+  }
+  virtual double get_rx_gain(const std::string & name, size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_gain, name, chan);
+  }
+  virtual double get_normalized_rx_gain(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_normalized_rx_gain, chan);
+  }
+  virtual gain_range_t get_rx_gain_range(const std::string & name, size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_gain_range, name, chan);
+  }
+  virtual std::vector<std::string> get_rx_gain_names(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_gain_names, chan);
+  }
+  virtual void set_rx_antenna(const std::string & ant, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_rx_antenna, ant, chan);
+  }
+  virtual std::string get_rx_antenna(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_antenna, chan);
+  }
+  virtual std::vector<std::string> get_rx_antennas(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_antennas, chan);
+  }
+  virtual void set_rx_bandwidth(double bandwidth, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_rx_bandwidth, bandwidth, chan);
+  }
+  virtual double get_rx_bandwidth(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_bandwidth, chan);
+  }
+  virtual meta_range_t get_rx_bandwidth_range(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_bandwidth_range, chan);
+  }
+  virtual dboard_iface::sptr get_rx_dboard_iface(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_dboard_iface, chan);
+  }
+  virtual sensor_value_t get_rx_sensor(const std::string & name, size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_sensor, name, chan);
+  }
+  virtual std::vector<std::string> get_rx_sensor_names(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_rx_sensor_names, chan);
+  }
+  virtual void set_rx_dc_offset(const bool enb, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_rx_dc_offset, enb, chan);
+  }
+  virtual void set_rx_dc_offset(const std::complex<double>& offset, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_rx_dc_offset, offset, chan);
+  }
+  virtual void set_rx_iq_balance(const bool enb, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_rx_iq_balance, enb, chan);
+  }
+  virtual void set_rx_iq_balance(const std::complex<double>& correction, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_rx_iq_balance, correction, chan);
+  }
+  virtual void set_tx_subdev_spec(const uhd::usrp::subdev_spec_t & spec, size_t mboard) override
+  {
+    UHD_DEBUG_LOG(set_tx_subdev_spec, spec, mboard);
+  }
+  virtual uhd::usrp::subdev_spec_t get_tx_subdev_spec(size_t mboard) override
+  {
+    UHD_DEBUG_LOG(get_tx_subdev_spec, mboard);
+  }
+  virtual size_t get_tx_num_channels(void) override
+  {
+    UHD_DEBUG_LOG(get_tx_num_channels);
+  }
+  virtual std::string get_tx_subdev_name(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_tx_subdev_name, chan);
+  }
+  virtual void set_tx_rate(double rate, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_tx_rate, rate, chan);
+  }
+  virtual double get_tx_rate(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_tx_rate, chan);
+  }
+  virtual meta_range_t get_tx_rates(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_tx_rates, chan);
+  }
+  virtual tune_result_t set_tx_freq(const tune_request_t & tune_request, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_tx_freq, tune_request, chan);
+  }
+  virtual double get_tx_freq(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_tx_freq, chan);
+  }
+  virtual freq_range_t get_tx_freq_range(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_tx_freq_range, chan);
+  }
+  virtual freq_range_t get_fe_tx_freq_range(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_fe_tx_freq_range, chan);
+  }
+  virtual void set_tx_gain(double gain, const std::string & name, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_tx_gain, gain, name, chan);
+  }
+  virtual void set_normalized_tx_gain(double gain, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_normalized_tx_gain, gain, chan);
+  }
+  virtual double get_tx_gain(const std::string & name, size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_tx_gain, name, chan);
+  }
+  virtual double get_normalized_tx_gain(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_normalized_tx_gain, chan);
+  }
+  virtual gain_range_t get_tx_gain_range(const std::string & name, size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_tx_gain_range, name, chan);
+  }
+  virtual std::vector<std::string> get_tx_gain_names(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_tx_gain_names, chan);
+  }
+  virtual void set_tx_antenna(const std::string & ant, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_tx_antenna, ant, chan);
+  }
+  virtual std::string get_tx_antenna(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_tx_antenna, chan);
+  }
+  virtual std::vector<std::string> get_tx_antennas(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_tx_antennas, chan);
+  }
+  virtual void set_tx_bandwidth(double bandwidth, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_tx_bandwidth, bandwidth, chan);
+  }
+  virtual double get_tx_bandwidth(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_tx_bandwidth, chan);
+  }
+  virtual meta_range_t get_tx_bandwidth_range(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_tx_bandwidth_range, chan);
+  }
+  virtual dboard_iface::sptr get_tx_dboard_iface(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_tx_dboard_iface, chan);
+  }
+  virtual sensor_value_t get_tx_sensor(const std::string & name, size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_tx_sensor, name, chan);
+  }
+  virtual std::vector<std::string> get_tx_sensor_names(size_t chan) override
+  {
+    UHD_DEBUG_LOG(get_tx_sensor_names, chan);
+  }
+  virtual void set_tx_dc_offset(const std::complex<double>& offset, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_tx_dc_offset, offset, chan);
+  }
+  virtual void set_tx_iq_balance(const std::complex<double>& correction, size_t chan) override
+  {
+    UHD_DEBUG_LOG(set_tx_iq_balance, correction, chan);
+  }
+  virtual std::vector<std::string> get_gpio_banks(const size_t mboard) override
+  {
+    UHD_DEBUG_LOG(get_gpio_banks, mboard);
+  }
+  virtual void set_gpio_attr(const std::string &bank, const std::string &attr, const uint32_t value, const uint32_t mask = 0xffffffff, const size_t mboard = 0) override
+  {
+    UHD_DEBUG_LOG(set_gpio_attr, bank, attr, value, mask, mboard);
+  }
+  virtual uint32_t get_gpio_attr(const std::string & bank, const std::string & attr, const size_t mboard) override
+  {
+    UHD_DEBUG_LOG(get_gpio_attr, bank, attr, mboard);
+  }
+  virtual std::vector<std::string> enumerate_registers(const size_t mboard) override
+  {
+    UHD_DEBUG_LOG(enumerate_registers, mboard);
+  }
+  virtual register_info_t get_register_info(const std::string & path, const size_t mboard) override
+  {
+    UHD_DEBUG_LOG(get_register_info, path, mboard);
+  }
+  virtual void write_register(const std::string & path, const uint32_t field, const uint64_t value, const size_t mboard) override
+  {
+    UHD_DEBUG_LOG(write_register, path, field, value, mboard);
+  }
+  virtual uint64_t read_register(const std::string & path, const uint32_t field, const size_t mboard) override
+  {
+    UHD_DEBUG_LOG(read_register, path, field, mboard);
+  }
+  virtual std::vector<std::string> get_filter_names(const std::string & search_mask) override
+  {
+    UHD_DEBUG_LOG(get_filter_names, search_mask);
+  }
+  virtual filter_info_base::sptr get_filter(const std::string & path) override
+  {
+    UHD_DEBUG_LOG(get_filter, path);
+  }
+  virtual void set_filter(const std::string & path, filter_info_base::sptr filter) override
+  {
+    UHD_DEBUG_LOG(set_filter, path, filter);
+  }
+};
+
 /***********************************************************************
  * The Make Function
  **********************************************************************/
 multi_usrp::sptr multi_usrp::make(const device_addr_t &dev_addr){
     UHD_LOG << "multi_usrp::make with args " << dev_addr.to_pp_string() << std::endl;
+#ifdef NDEBUG
     return sptr(new multi_usrp_impl(dev_addr));
+#else
+    return sptr(new multi_usrp_debug(dev_addr));
+#endif // !NDEBUG
+
 }
