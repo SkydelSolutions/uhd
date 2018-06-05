@@ -1463,7 +1463,13 @@ void x300_impl::update_clock_source(mboard_members_t &mb, const std::string &sou
     //* Currently the LMK can take as long as 30 seconds to lock to a reference but we don't
     //* want to wait that long during initialization.
     //TODO: Need to verify timeout and settings to make sure lock can be achieved in < 1.0 seconds
-    double timeout = mb.initialization_done ? 30.0 : 1.0;
+    // SERGE MALO: Message from Michael West:
+    //  The only time we have seen the PLL take 30 seconds to lock is when there is no external clock and the clock source is set to external and then changed from external back to a valid clock source(i.e.internal or gpsdo).
+    //  That case may now be mitigated by the call to mb.clock->reset_clocks(), so the 30 seconds may be entirely unnecessary.We would have to test to be sure, but I think it is safe to reduce that timeout significantly(maybe even < 1 second).
+    //  The reason for the long timeout is to ensure the PLL is locked before resetting the downstream PLLs, ADCs, and DACs, so reducing the timeout to 5s and doing up to 6 retries is not exactly the same.It would result in multiple resets on the downstream components.
+    //  It may or may not be OK to do that.
+    //  SERGE MALO: We think it will be better to have a 1.0s timeout, and do 10x retries
+    double timeout = 1.0;
 
     //The programming code in x300_clock_ctrl is not compatible with revs <= 4 and may
     //lead to locking issues. So, disable the ref-locked check for older (unsupported) boards.
