@@ -50,7 +50,7 @@ SET(test_sources
 )
 
 #turn each test cpp file into an executable with an int main() function
-ADD_DEFINITIONS(-DBOOST_TEST_DYN_LINK -DBOOST_TEST_MAIN)
+ADD_DEFINITIONS(-DBOOST_TEST_MAIN)
 
 IF(ENABLE_RFNOC)
     LIST(APPEND test_sources
