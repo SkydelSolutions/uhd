@@ -274,6 +274,10 @@ SET(Boost_ADDITIONAL_VERSIONS
     "1.51.0" "1.51" "1.52.0" "1.52" "1.53.0" "1.53" "1.54.0" "1.54" "1.55.0" "1.55"
     "1.56.0" "1.56" "1.57" "1.57" "1.58" "1.59" "1.60" "1.61"
 )
+set(Boost_USE_STATIC_LIBS ON)
+set(BOOST_ROOT "/opt/boost_1_58_0")
+set(BOOST_INCLUDEDIR "/opt/boost_1_58_0")
+set(BOOST_LIBRARYDIR "/opt/boost_1_58_0/lib/linux")
 FIND_PACKAGE(Boost 1.53 COMPONENTS ${BOOST_REQUIRED_COMPONENTS})
 
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
