@@ -334,6 +334,13 @@ set(Boost_ADDITIONAL_VERSIONS
     "1.64" "1.65" "1.66" "1.67" "1.68" "1.69"
 )
 
+set(Boost_USE_STATIC_LIBS ON)
+set(BOOST_ROOT "/opt/boost_1_68_0/")
+set(BOOST_INCLUDEDIR "/opt/boost_1_68_0/include/")
+set(BOOST_LIBRARYDIR "/opt/boost_1_68_0/lib/linux")
+set(Boost_NO_SYSTEM_PATHS ON)
+
+
 #Python API requirements
 message(STATUS "Looking for optional Boost components...")
 find_package(Boost ${BOOST_MIN_VERSION} OPTIONAL_COMPONENTS ${BOOST_OPTIONAL_COMPONENTS})

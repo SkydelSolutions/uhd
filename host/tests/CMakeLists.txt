@@ -58,7 +58,7 @@ set(benchmark_sources
 )
 
 #turn each test cpp file into an executable with an int main() function
-add_definitions(-DBOOST_TEST_DYN_LINK -DBOOST_TEST_MAIN)
+add_definitions(-DBOOST_TEST_MAIN)
 
 if(ENABLE_RFNOC)
     list(APPEND test_sources
