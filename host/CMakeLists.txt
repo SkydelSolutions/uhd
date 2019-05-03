@@ -334,9 +334,10 @@ set(Boost_ADDITIONAL_VERSIONS
 )
 
 set(Boost_USE_STATIC_LIBS ON)
-set(BOOST_ROOT "/opt/boost_1_58_0")
-set(BOOST_INCLUDEDIR "/opt/boost_1_58_0")
-set(BOOST_LIBRARYDIR "/opt/boost_1_58_0/lib/linux")
+set(BOOST_ROOT "/opt/boost_1_68_0/")
+set(BOOST_INCLUDEDIR "/opt/boost_1_68_0/include/")
+set(BOOST_LIBRARYDIR "/opt/boost_1_68_0/lib/linux")
+set(Boost_NO_SYSTEM_PATHS ON)
 
 #Python API requirements
 message(STATUS "Looking for optional Boost components...")
