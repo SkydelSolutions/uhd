@@ -214,7 +214,7 @@ private:
                 UHD_ASSERT_THROW(packet_info.num_payload_words32 == 2);
             }
             catch (const std::exception &ex) {
-                throw uhd::io_error(str(
+                 throw uhd::io_error(str(
                     boost::format("Block ctrl (%s) packet parse error - %s")
                     % _name
                     % ex.what()

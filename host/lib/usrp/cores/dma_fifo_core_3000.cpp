@@ -7,6 +7,7 @@
 
 #include <uhd/exception.hpp>
 #include <uhd/utils/soft_register.hpp>
+#include <uhd/utils/safe_call.hpp>
 #include <uhd/utils/log.hpp>
 #include <uhdlib/usrp/cores/dma_fifo_core_3000.hpp>
 #include <boost/format.hpp>
@@ -244,7 +245,9 @@ public:
     }
 
     virtual ~dma_fifo_core_3000_impl() {
+      UHD_SAFE_CALL(
         flush();
+        )
     }
 
     virtual bool flush(uint32_t timeout_ms = 2000) {
