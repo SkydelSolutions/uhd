@@ -811,20 +811,7 @@ private: // methods
                  result.push_back(std::make_pair(block,port));
             }
         }
-        //assign to block prior ports
-        size_t port = 0;
-        size_t i = 0;
-        for (size_t j=0; j<result.size(); j++){
-            auto block = block_list[j%block_list.size()];
-            UHD_ASSERT_THROW(port < block->get_output_ports().size());
-            if (i == block_list.size())
-            {
-                i = 0;
-                port ++;
-            }
-            result[j] = std::make_pair(block,port);
-            i++;
-        }
+
         return result;
     }
 
@@ -839,20 +826,7 @@ private: // methods
                  result.push_back(std::make_pair(block,port));
             }
         }
-        //assign to block prior ports
-        size_t port = 0;
-        size_t i = 0;
-        for (size_t j=0; j<result.size(); j++){
-            auto block = block_list[j%block_list.size()];
-            UHD_ASSERT_THROW(port < block->get_input_ports().size());
-            if (i == block_list.size())
-            {
-                i = 0;
-                port ++;
-            }
-            result[j] = std::make_pair(block,port);
-            i++;
-        }
+
         return result;
     }
 

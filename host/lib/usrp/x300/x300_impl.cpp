@@ -424,15 +424,11 @@ x300_impl::x300_impl(const uhd::device_addr_t &dev_addr)
     while (num_usrps < total_usrps)
     {
         size_t init_usrps = std::min(total_usrps - num_usrps, X300_MAX_INIT_THREADS);
-        boost::thread_group setup_threads;
         for (size_t i = 0; i < init_usrps; i++)
         {
             size_t index = num_usrps + i;
-            setup_threads.create_thread(
-                boost::bind(&x300_impl::setup_mb, this, index, device_args[index])
-            );
+            setup_mb(index, device_args[index]);
         }
-        setup_threads.join_all();
         num_usrps += init_usrps;
     }
 
