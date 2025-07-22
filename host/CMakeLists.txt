@@ -333,11 +333,11 @@ endif(MSVC)
 set(Boost_ADDITIONAL_VERSIONS
     "1.46.0" "1.46" "1.47.0" "1.47" "1.48.0" "1.48" "1.48.0" "1.49" "1.50.0" "1.50"
     "1.51.0" "1.51" "1.52.0" "1.52" "1.53.0" "1.53" "1.54.0" "1.54" "1.55.0" "1.55"
-    "1.56.0" "1.56" "1.57" "1.57" "1.58" "1.59" "1.60" "1.61" "1.62" "1.63" "1.68" "1.74"
+    "1.56.0" "1.56" "1.57" "1.57" "1.58" "1.59" "1.60" "1.61" "1.62" "1.63" "1.68" "1.84"
 )
 
 set(Boost_USE_STATIC_LIBS ON)
-set(BOOST_ROOT "/opt/boost_1_74_0")
+set(BOOST_ROOT "/opt/boost_1_84_0")
 set(BOOST_INCLUDEDIR "/opt/boost_1_84_0/include")
 set(BOOST_LIBRARYDIR "/opt/boost_1_84_0/lib")
 add_definitions(-DBOOST_TIMER_ENABLE_DEPRECATED=FALSE)
