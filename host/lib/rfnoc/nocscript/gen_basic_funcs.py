@@ -316,7 +316,7 @@ REGISTER_COMMANDS_TEMPLATE = """
     % endif
     register_function(
             "${name}",
-            boost::bind(&${func_name}, _1),
+            boost::bind(&${func_name}, boost::placeholders::_1),
             expression::TYPE_${retval},
             ${func_name}_args
     );"""

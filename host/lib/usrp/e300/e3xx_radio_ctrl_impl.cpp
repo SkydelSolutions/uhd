@@ -58,7 +58,7 @@ UHD_RFNOC_RADIO_BLOCK_CONSTRUCTOR(e3xx_radio_ctrl)
     // Time source
     ////////////////////////////////////////////////////////////////////
     _tree->create<std::string>("time_source/value")
-        .add_coerced_subscriber(boost::bind(&e3xx_radio_ctrl_impl::_update_time_source, this, _1))
+        .add_coerced_subscriber(boost::bind(&e3xx_radio_ctrl_impl::_update_time_source, this, boost::placeholders::_1))
         .set(DEFAULT_TIME_SRC);
 #ifdef E300_GPSD
     static const std::vector<std::string> time_sources = boost::assign::list_of("none")("internal")("external")("gpsdo");
@@ -132,7 +132,7 @@ UHD_RFNOC_RADIO_BLOCK_CONSTRUCTOR(e3xx_radio_ctrl)
     ////////////////////////////////////////////////////////////////////
     UHD_RFNOC_BLOCK_TRACE() << "  Setting tick rate..." << std::endl;
     _tree->access<double>("tick_rate")
-        .add_coerced_subscriber(boost::bind(&e3xx_radio_ctrl_impl::set_rate, this, _1))
+        .add_coerced_subscriber(boost::bind(&e3xx_radio_ctrl_impl::set_rate, this, boost::placeholders::_1))
         .set_publisher(boost::bind(&e3xx_radio_ctrl_impl::get_rate, this))
     ;
 }
@@ -338,7 +338,7 @@ void e3xx_radio_ctrl_impl::_setup_radio_channel(const size_t chan)
 {
     const fs_path rx_dsp_path = fs_path("rx_dsps") / chan;
     _tree->create<stream_cmd_t>(rx_dsp_path / "stream_cmd")
-        .add_coerced_subscriber(boost::bind(&radio_ctrl_impl::issue_stream_cmd, this, _1, chan));
+        .add_coerced_subscriber(boost::bind(&radio_ctrl_impl::issue_stream_cmd, this, boost::placeholders::_1, chan));
 
     ////////////////////////////////////////////////////////////////////
     // add some dummy nodes on the prop tree (FIXME remove these)
@@ -349,11 +349,11 @@ void e3xx_radio_ctrl_impl::_setup_radio_channel(const size_t chan)
     _tree->create<double>(rx_dsp_path / "freq/value").set(0.0);
     _tree->create<meta_range_t>(rx_dsp_path / "freq/range").set(meta_range_t(0.0, 0.0, 0.0));
     _tree->create<double>(tx_dsp_path / "rate/value")
-        .add_coerced_subscriber(boost::bind(&e3xx_radio_ctrl_impl::set_rate, this, _1))
+        .add_coerced_subscriber(boost::bind(&e3xx_radio_ctrl_impl::set_rate, this, boost::placeholders::_1))
         .set_publisher(boost::bind(&radio_ctrl_impl::get_rate, this))
     ;
     _tree->create<double>(rx_dsp_path / "rate/value")
-        .add_coerced_subscriber(boost::bind(&e3xx_radio_ctrl_impl::set_rate, this, _1))
+        .add_coerced_subscriber(boost::bind(&e3xx_radio_ctrl_impl::set_rate, this, boost::placeholders::_1))
         .set_publisher(boost::bind(&radio_ctrl_impl::get_rate, this))
     ;
 
@@ -377,7 +377,7 @@ void e3xx_radio_ctrl_impl::_setup_radio_channel(const size_t chan)
             .set_publisher(boost::bind(&e3xx_radio_ctrl_impl::_get_fe_pll_lock, this, dir == TX_DIRECTION))
         ;
         const double freq = _tree->access<double>(rf_fe_path / "freq" / "value")
-            .add_coerced_subscriber(boost::bind(&e3xx_radio_ctrl_impl::_update_fe_lo_freq, this, key, _1)).get()
+            .add_coerced_subscriber(boost::bind(&e3xx_radio_ctrl_impl::_update_fe_lo_freq, this, key, boost::placeholders::_1)).get()
         ;
         // Set frequency in parent (to be used to update ATR values later)
         if (dir == RX_DIRECTION) {
@@ -391,7 +391,7 @@ void e3xx_radio_ctrl_impl::_setup_radio_channel(const size_t chan)
             static const std::vector<std::string> ants = boost::assign::list_of("TX/RX")("RX2");
             _tree->create<std::vector<std::string> >(rf_fe_path / "antenna" / "options").set(ants);
             _tree->create<std::string>(rf_fe_path / "antenna" / "value")
-                .add_coerced_subscriber(boost::bind(&e3xx_radio_ctrl_impl::set_rx_antenna, this, _1, chan))
+                .add_coerced_subscriber(boost::bind(&e3xx_radio_ctrl_impl::set_rx_antenna, this, boost::placeholders::_1, chan))
                 .set_publisher(boost::bind(&e3xx_radio_ctrl_impl::get_rx_antenna, this, chan));
             // Set default in parent (to be used to update ATR values later)
             radio_ctrl_impl::set_rx_antenna("RX2", chan);
@@ -402,7 +402,7 @@ void e3xx_radio_ctrl_impl::_setup_radio_channel(const size_t chan)
             static const std::vector<std::string> ants(1, "TX/RX");
             _tree->create<std::vector<std::string> >(rf_fe_path / "antenna" / "options").set(ants);
             _tree->create<std::string>(rf_fe_path / "antenna" / "value")
-            .add_coerced_subscriber(boost::bind(&e3xx_radio_ctrl_impl::set_tx_antenna, this, _1, chan))
+            .add_coerced_subscriber(boost::bind(&e3xx_radio_ctrl_impl::set_tx_antenna, this, boost::placeholders::_1, chan))
             .set_publisher(boost::bind(&e3xx_radio_ctrl_impl::get_tx_antenna, this, chan))
             .set("TX/RX");
         }

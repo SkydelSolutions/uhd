@@ -299,11 +299,11 @@ protected:
             //Add resolve callbacks
             if (resolve_mode == AUTO_RESOLVE_ON_WRITE or resolve_mode == AUTO_RESOLVE_ON_READ_WRITE) {
                 EX_LOG(2, str(boost::format("added write callback")));
-                data_node->set_write_callback(boost::bind(&expert_container_impl::resolve_from, this, _1));
+                data_node->set_write_callback(boost::bind(&expert_container_impl::resolve_from, this, boost::placeholders::_1));
             }
             if (resolve_mode == AUTO_RESOLVE_ON_READ or resolve_mode == AUTO_RESOLVE_ON_READ_WRITE) {
                 EX_LOG(2, str(boost::format("added read callback")));
-                data_node->set_read_callback(boost::bind(&expert_container_impl::resolve_to, this, _1));
+                data_node->set_read_callback(boost::bind(&expert_container_impl::resolve_to, this, boost::placeholders::_1));
             }
         } catch (...) {
             clear();

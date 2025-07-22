@@ -52,11 +52,11 @@ public:
                 }
             }
             _tree->access<int>(get_arg_path("base_addr/value", i))
-                .add_coerced_subscriber(boost::bind(&dma_fifo_block_ctrl_impl::resize, this, _1, boost::ref(_perifs[i].depth), i))
+                .add_coerced_subscriber(boost::bind(&dma_fifo_block_ctrl_impl::resize, this, boost::placeholders::_1, boost::ref(_perifs[i].depth), i))
                 .set(_perifs[i].base_addr)
             ;
             _tree->access<int>(get_arg_path("depth/value", i))
-                .add_coerced_subscriber(boost::bind(&dma_fifo_block_ctrl_impl::resize, this, boost::ref(_perifs[i].base_addr), _1, i))
+                .add_coerced_subscriber(boost::bind(&dma_fifo_block_ctrl_impl::resize, this, boost::ref(_perifs[i].base_addr), boost::placeholders::_1, i))
                 .set(_perifs[i].depth)
             ;
         }

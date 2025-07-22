@@ -316,7 +316,7 @@ class parser_impl : public parser
         bool r = lex::tokenize(
             first, last, // Iterators
             lexer_functor, // Lexer
-            boost::bind(grammar(), _1, boost::ref(P), boost::ref(next_valid_state)) // Function object
+            boost::bind(grammar(), boost::placeholders::_1, boost::ref(P), boost::ref(next_valid_state)) // Function object
         );
 
         // Check the parsing worked:

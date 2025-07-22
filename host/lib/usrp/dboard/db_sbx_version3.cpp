@@ -20,8 +20,8 @@ using namespace boost::assign;
 sbx_xcvr::sbx_version3::sbx_version3(sbx_xcvr *_self_sbx_xcvr) {
     //register the handle to our base SBX class
     self_base = _self_sbx_xcvr;
-    _txlo = adf435x_iface::make_adf4350(boost::bind(&sbx_xcvr::sbx_version3::write_lo_regs, this, dboard_iface::UNIT_TX, _1));
-    _rxlo = adf435x_iface::make_adf4350(boost::bind(&sbx_xcvr::sbx_version3::write_lo_regs, this, dboard_iface::UNIT_RX, _1));
+    _txlo = adf435x_iface::make_adf4350(boost::bind(&sbx_xcvr::sbx_version3::write_lo_regs, this, dboard_iface::UNIT_TX, boost::placeholders::_1));
+    _rxlo = adf435x_iface::make_adf4350(boost::bind(&sbx_xcvr::sbx_version3::write_lo_regs, this, dboard_iface::UNIT_RX, boost::placeholders::_1));
 }
 
 sbx_xcvr::sbx_version3::~sbx_version3(void){

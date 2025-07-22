@@ -78,11 +78,11 @@ public:
         ;
         subtree->create< std::complex<double> >("dc_offset/value")
             .set(DEFAULT_DC_OFFSET_VALUE)
-            .set_coercer(boost::bind(&tx_frontend_core_200::set_dc_offset, this, _1))
+            .set_coercer(boost::bind(&tx_frontend_core_200::set_dc_offset, this, boost::placeholders::_1))
         ;
         subtree->create< std::complex<double> >("iq_balance/value")
             .set(DEFAULT_IQ_BALANCE_VALUE)
-            .add_coerced_subscriber(boost::bind(&tx_frontend_core_200::set_iq_balance, this, _1))
+            .add_coerced_subscriber(boost::bind(&tx_frontend_core_200::set_iq_balance, this, boost::placeholders::_1))
         ;
     }
 

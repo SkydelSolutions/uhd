@@ -214,7 +214,7 @@ static gain_fcns_t make_gain_fcns_from_subtree(property_tree::sptr subtree){
     gain_fcns_t gain_fcns;
     gain_fcns.get_range = boost::bind(&get_gain_range, subtree);
     gain_fcns.get_value = boost::bind(&get_gain_value, subtree);
-    gain_fcns.set_value = boost::bind(&set_gain_value, subtree, _1);
+    gain_fcns.set_value = boost::bind(&set_gain_value, subtree, boost::placeholders::_1);
     return gain_fcns;
 }
 

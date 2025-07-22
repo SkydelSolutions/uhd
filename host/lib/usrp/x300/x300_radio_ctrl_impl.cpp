@@ -125,7 +125,7 @@ UHD_RFNOC_RADIO_BLOCK_CONSTRUCTOR(x300_radio_ctrl)
 
     _tree->create<meta_range_t>("rx_codecs" / _radio_slot / "gains" / "digital" / "range").set(meta_range_t(0, 6.0, 0.5));
     _tree->create<double>("rx_codecs" / _radio_slot / "gains" / "digital" / "value")
-        .add_coerced_subscriber(boost::bind(&x300_adc_ctrl::set_gain, _adc, _1)).set(0)
+        .add_coerced_subscriber(boost::bind(&x300_adc_ctrl::set_gain, _adc, boost::placeholders::_1)).set(0)
     ;
 
     ////////////////////////////////////////////////////////////////
@@ -152,7 +152,7 @@ UHD_RFNOC_RADIO_BLOCK_CONSTRUCTOR(x300_radio_ctrl)
 
         if (_tree->exists(fs_path("time") / "cmd")) {
             _tree->access<time_spec_t>(fs_path("time") / "cmd")
-                .add_coerced_subscriber(boost::bind(&x300_radio_ctrl_impl::set_fe_cmd_time, this, _1, i));
+                .add_coerced_subscriber(boost::bind(&x300_radio_ctrl_impl::set_fe_cmd_time, this, boost::placeholders::_1, i));
         }
     }
 
@@ -664,7 +664,7 @@ void x300_radio_ctrl_impl::setup_radio(
         _tree->create<dboard_eeprom_t>(db_path / EEPROM_PATHS[i])
             .set(_db_eeproms[addr])
             .add_coerced_subscriber(boost::bind(&x300_radio_ctrl_impl::_set_db_eeprom,
-                this, zpu_i2c, (BASE_ADDR | addr), _1));
+                this, zpu_i2c, (BASE_ADDR | addr), boost::placeholders::_1));
     }
 
     //create a new dboard interface
@@ -728,7 +728,7 @@ void x300_radio_ctrl_impl::setup_radio(
             if (_tree->exists(db_path / "rx_frontends" / _rx_fe_map[i].db_fe_name / "antenna" / "value")) {
                 // We need a desired subscriber for antenna/value because the experts don't coerce that property.
                 _tree->access<std::string>(db_path / "rx_frontends" / _rx_fe_map[i].db_fe_name / "antenna" / "value")
-                    .add_desired_subscriber(boost::bind(&x300_radio_ctrl_impl::_update_atr_leds, this, _1, i));
+                    .add_desired_subscriber(boost::bind(&x300_radio_ctrl_impl::_update_atr_leds, this, boost::placeholders::_1, i));
                 _update_atr_leds(_tree->access<std::string>
                         (db_path / "rx_frontends" / _rx_fe_map[i].db_fe_name / "antenna" / "value").get(), i);
             } else {
@@ -744,7 +744,7 @@ void x300_radio_ctrl_impl::setup_radio(
             if (_tree->exists(db_tx_fe_path / _tx_fe_map[i].db_fe_name / "freq" / "value")) {
                 _tree->access<double>(db_tx_fe_path / _tx_fe_map[i].db_fe_name / "freq" / "value")
                         .add_coerced_subscriber(boost::bind(&x300_radio_ctrl_impl::set_tx_fe_corrections, this, db_path,
-                                                            _root_path / "tx_fe_corrections" / _tx_fe_map[i].db_fe_name, _1));
+                                                            _root_path / "tx_fe_corrections" / _tx_fe_map[i].db_fe_name, boost::placeholders::_1));
             }
         }
     }
@@ -755,7 +755,7 @@ void x300_radio_ctrl_impl::setup_radio(
                 _tree->access<double>(db_rx_fe_path / _tx_fe_map[i].db_fe_name / "freq" / "value")
                         .add_coerced_subscriber(boost::bind(&x300_radio_ctrl_impl::set_rx_fe_corrections, this, db_path,
                                                             _root_path / "rx_fe_corrections" / _tx_fe_map[i].db_fe_name,
-                                                            _1));
+                                                            boost::placeholders::_1));
             }
         }
     }

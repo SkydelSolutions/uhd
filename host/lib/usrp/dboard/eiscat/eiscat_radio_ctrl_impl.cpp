@@ -273,7 +273,7 @@ UHD_RFNOC_RADIO_BLOCK_CONSTRUCTOR(eiscat_radio_ctrl)
     UHD_ASSERT_THROW(not _tree->exists("tick_rate"));
     _tree->create<double>("tick_rate")
         .set(EISCAT_TICK_RATE)
-        .set_coercer(boost::bind(&eiscat_radio_ctrl_impl::set_rate, this, _1))
+        .set_coercer(boost::bind(&eiscat_radio_ctrl_impl::set_rate, this, boost::placeholders::_1))
     ;
 }
 
