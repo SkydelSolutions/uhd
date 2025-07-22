@@ -23,11 +23,11 @@ TMPL_TEXT = """<% import time %>
 #include <uhd/exception.hpp>
 #include <uhd/transport/vrt_if_packet.hpp>
 #include <uhd/utils/byteswap.hpp>
-#include <boost/detail/endian.hpp>
+#include <boost/predef/other/endian.h>
 #include <vector>
 
 //define the endian macros to convert integers
-#ifdef BOOST_BIG_ENDIAN
+#ifdef BOOST_ENDIAN_BIG_BYTE
     #define BE_MACRO(x) (x)
     #define LE_MACRO(x) uhd::byteswap(x)
 #else

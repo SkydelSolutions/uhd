@@ -157,7 +157,7 @@ private:
  * Factory functions and registration
  **********************************************************************/
 
-#ifdef BOOST_BIG_ENDIAN
+#ifdef BOOST_ENDIAN_BIG_BYTE
 #  define SHIFT_PAIR0 16, 0
 #  define SHIFT_PAIR1 0, 16
 #  define BE_SWAP false
