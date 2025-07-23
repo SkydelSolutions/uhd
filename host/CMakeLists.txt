@@ -337,9 +337,14 @@ set(Boost_ADDITIONAL_VERSIONS
 )
 
 set(Boost_USE_STATIC_LIBS ON)
-set(BOOST_ROOT "/opt/boost_1_84_0")
-set(BOOST_INCLUDEDIR "/opt/boost_1_84_0/include")
-set(BOOST_LIBRARYDIR "/opt/boost_1_84_0/lib")
+if(MSVC)
+    set(BOOST_ROOT "C:/Boost/boost_1_84_0")
+    set(Boost_LIBRARY_DIR "C:/Boost/boost_1_84_0/lib/lib")
+else(MSVC)
+    set(BOOST_ROOT "/opt/boost_1_84_0")
+    set(BOOST_INCLUDEDIR "/opt/boost_1_84_0/boost")
+    set(BOOST_LIBRARYDIR "/opt/boost_1_84_0/lib")
+endif(MSVC)
 add_definitions(-DBOOST_TIMER_ENABLE_DEPRECATED=FALSE)
 
 #Python API requirements
