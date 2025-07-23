@@ -5,12 +5,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 
+#define _USE_MATH_DEFINES
 #include "ad9361_filter_taps.h"
 #include "ad9361_gain_tables.h"
 #include "ad9361_synth_lut.h"
 #include "ad9361_client.h"
 #include "ad9361_device.h"
-#define _USE_MATH_DEFINES
 #include <uhd/exception.hpp>
 #include <uhd/utils/log.hpp>
 
