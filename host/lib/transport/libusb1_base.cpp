@@ -21,6 +21,10 @@
 using namespace uhd;
 using namespace uhd::transport;
 
+#ifdef _WIN32
+#  include <winsock2.h>
+#endif
+
 /***********************************************************************
  * libusb session
  **********************************************************************/

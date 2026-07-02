@@ -12,7 +12,7 @@
 ########################################################################
 # Project setup
 ########################################################################
-cmake_minimum_required(VERSION 2.8.2)
+cmake_minimum_required(VERSION 3.20)
 if(POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW) # Suppress Version warnings
 endif(POLICY CMP0048)
@@ -276,7 +276,7 @@ if(CYGWIN)
 endif(CYGWIN)
 
 if(WIN32)
-    add_definitions(-D_WIN32_WINNT=0x0501) #minimum version required is windows xp
+    add_definitions(-D_WIN32_WINNT=0x0A00) #minimum version required is windows 10
     add_definitions(-DNOMINMAX) #disables stupidity and enables std::min and std::max
 endif(WIN32)
 
