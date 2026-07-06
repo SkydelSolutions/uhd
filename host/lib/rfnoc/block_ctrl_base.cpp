@@ -248,7 +248,7 @@ timed_wb_iface::sptr block_ctrl_base::get_ctrl_iface(const size_t block_port)
     return boost::make_shared<wb_iface_adapter>(
         _ctrl_ifaces[block_port],
         boost::bind(&block_ctrl_base::get_command_tick_rate, this, block_port),
-        boost::bind(&block_ctrl_base::set_command_time, this, _1, block_port),
+        boost::bind(&block_ctrl_base::set_command_time, this, boost::placeholders::_1, block_port),
         boost::bind(&block_ctrl_base::get_command_time, this, block_port)
     );
 }

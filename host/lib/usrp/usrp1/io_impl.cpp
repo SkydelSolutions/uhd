@@ -140,7 +140,7 @@ struct usrp1_impl::io_impl{
     io_impl(zero_copy_if::sptr data_transport):
         data_transport(data_transport),
         curr_buff(offset_send_buffer(data_transport->get_send_buff())),
-        omsb(boost::bind(&usrp1_impl::io_impl::commit_send_buff, this, _1, _2, _3)),
+        omsb(boost::bind(&usrp1_impl::io_impl::commit_send_buff, this, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3)),
         vandal_loop_exit(false)
     {
         /* NOP */
@@ -638,7 +638,7 @@ rx_streamer::sptr usrp1_impl::get_rx_stream(const uhd::stream_args_t &args_){
     my_streamer->set_tick_rate(_master_clock_rate);
     my_streamer->set_vrt_unpacker(&usrp1_bs_vrt_unpacker);
     my_streamer->set_xport_chan_get_buff(0, boost::bind(
-        &uhd::transport::zero_copy_if::get_recv_buff, _io_impl->data_transport, _1
+        &uhd::transport::zero_copy_if::get_recv_buff, _io_impl->data_transport, boost::placeholders::_1
     ));
 
     //set the converter
@@ -687,7 +687,7 @@ tx_streamer::sptr usrp1_impl::get_tx_stream(const uhd::stream_args_t &args_){
     const size_t spp = bpp/convert::get_bytes_per_item(args.otw_format);
 
     //make the new streamer given the samples per packet
-    boost::function<void(bool)> tx_fcn = boost::bind(&usrp1_impl::tx_stream_on_off, this, _1);
+    boost::function<void(bool)> tx_fcn = boost::bind(&usrp1_impl::tx_stream_on_off, this, boost::placeholders::_1);
     boost::shared_ptr<usrp1_send_packet_streamer> my_streamer =
         boost::make_shared<usrp1_send_packet_streamer>(spp, _soft_time_ctrl, tx_fcn);
 
@@ -695,7 +695,7 @@ tx_streamer::sptr usrp1_impl::get_tx_stream(const uhd::stream_args_t &args_){
     my_streamer->set_tick_rate(_master_clock_rate);
     my_streamer->set_vrt_packer(&usrp1_bs_vrt_packer);
     my_streamer->set_xport_chan_get_buff(0, boost::bind(
-        &usrp1_impl::io_impl::get_send_buff, _io_impl.get(), _1
+        &usrp1_impl::io_impl::get_send_buff, _io_impl.get(), boost::placeholders::_1
     ));
 
     //set the converter

@@ -121,7 +121,7 @@ rx_streamer::sptr n230_stream_manager::get_rx_stream(const uhd::stream_args_t &a
         //bind requires a zero_copy_if::sptr to add a streamer->xport lifetime dependency
         my_streamer->set_xport_chan_get_buff(
             stream_i,
-            boost::bind(&zero_copy_if::get_recv_buff, xport, _1),
+            boost::bind(&zero_copy_if::get_recv_buff, xport, boost::placeholders::_1),
             true /*flush*/
         );
 
@@ -130,7 +130,7 @@ rx_streamer::sptr n230_stream_manager::get_rx_stream(const uhd::stream_args_t &a
         ));
 
         my_streamer->set_issue_stream_cmd(stream_i, boost::bind(
-            &rx_vita_core_3000::issue_stream_command, perif.framer, _1
+            &rx_vita_core_3000::issue_stream_command, perif.framer, boost::placeholders::_1
         ));
 
         const size_t fc_window = _get_rx_flow_control_window(
@@ -143,7 +143,7 @@ rx_streamer::sptr n230_stream_manager::get_rx_stream(const uhd::stream_args_t &a
         //handle_rx_flowctrl is static and has no lifetime issues
         boost::shared_ptr<rx_fc_cache_t> fc_cache(new rx_fc_cache_t());
         my_streamer->set_xport_handle_flowctrl(
-            stream_i, boost::bind(&n230_stream_manager::_handle_rx_flowctrl, sid.get(), xport, fc_cache, _1),
+            stream_i, boost::bind(&n230_stream_manager::_handle_rx_flowctrl, sid.get(), xport, fc_cache, boost::placeholders::_1),
             fc_handle_window,
             true/*init*/
         );
@@ -264,11 +264,11 @@ tx_streamer::sptr n230_stream_manager::get_tx_stream(const uhd::stream_args_t &a
         //task (sptr) is required to add  a streamer->async-handler lifetime dependency
         my_streamer->set_xport_chan_get_buff(
             stream_i,
-            boost::bind(&n230_stream_manager::_get_tx_buff_with_flowctrl, task, fc_cache, xport, fc_window, _1)
+            boost::bind(&n230_stream_manager::_get_tx_buff_with_flowctrl, task, fc_cache, xport, fc_window, boost::placeholders::_1)
         );
         //Give the streamer a functor handled received async messages
         my_streamer->set_async_receiver(
-            boost::bind(&async_md_queue_t::pop_with_timed_wait, async_md, _1, _2)
+            boost::bind(&async_md_queue_t::pop_with_timed_wait, async_md, boost::placeholders::_1, boost::placeholders::_2)
         );
         my_streamer->set_xport_chan_sid(stream_i, true, sid.get());
         my_streamer->set_enable_trailer(false); //TODO not implemented trailer support yet

@@ -150,13 +150,13 @@ rx_streamer::sptr b100_impl::get_rx_stream(const uhd::stream_args_t &args_){
         _rx_dsps[dsp]->setup(args);
         _recv_demuxer->realloc_sid(B100_RX_SID_BASE + dsp);
         my_streamer->set_xport_chan_get_buff(chan_i, boost::bind(
-            &recv_packet_demuxer_3000::get_recv_buff, _recv_demuxer, B100_RX_SID_BASE + dsp, _1
+            &recv_packet_demuxer_3000::get_recv_buff, _recv_demuxer, B100_RX_SID_BASE + dsp, boost::placeholders::_1
         ), true /*flush*/);
         my_streamer->set_overflow_handler(chan_i, boost::bind(
             &rx_dsp_core_200::handle_overflow, _rx_dsps[dsp]
         ));
         my_streamer->set_issue_stream_cmd(chan_i, boost::bind(
-            &rx_dsp_core_200::issue_stream_command, _rx_dsps[dsp], _1));
+            &rx_dsp_core_200::issue_stream_command, _rx_dsps[dsp], boost::placeholders::_1));
         _rx_streamers[dsp] = my_streamer; //store weak pointer
     }
 
@@ -208,9 +208,9 @@ tx_streamer::sptr b100_impl::get_tx_stream(const uhd::stream_args_t &args_){
         UHD_ASSERT_THROW(dsp == 0); //always 0
         _tx_dsp->setup(args);
         my_streamer->set_xport_chan_get_buff(chan_i, boost::bind(
-            &zero_copy_if::get_send_buff, _data_transport, _1
+            &zero_copy_if::get_send_buff, _data_transport, boost::placeholders::_1
         ));
-        my_streamer->set_async_receiver(boost::bind(&fifo_ctrl_excelsior::pop_async_msg, _fifo_ctrl, _1, _2));
+        my_streamer->set_async_receiver(boost::bind(&fifo_ctrl_excelsior::pop_async_msg, _fifo_ctrl, boost::placeholders::_1, boost::placeholders::_2));
         _tx_streamers[dsp] = my_streamer; //store weak pointer
     }
 

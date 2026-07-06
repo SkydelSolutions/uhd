@@ -1069,7 +1069,7 @@ void x300_impl::setup_mb(const size_t mb_i, const uhd::device_addr_t &dev_addr)
         if (dev_addr.has_key("self_cal_adc_delay")) {
             rfnoc::x300_radio_ctrl_impl::self_cal_adc_xfer_delay(
                 mb.radios, mb.clock,
-                boost::bind(&x300_impl::wait_for_clk_locked, this, mb, fw_regmap_t::clk_status_reg_t::LMK_LOCK, _1),
+                boost::bind(&x300_impl::wait_for_clk_locked, this, mb, fw_regmap_t::clk_status_reg_t::LMK_LOCK, boost::placeholders::_1),
                 true /* Apply ADC delay */);
         }
         if (dev_addr.has_key("ext_adc_self_test")) {

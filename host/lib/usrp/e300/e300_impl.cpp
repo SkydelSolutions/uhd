@@ -461,7 +461,7 @@ e300_impl::e300_impl(const uhd::device_addr_t &device_addr)
 
     // Clock reference source
     _tree->create<std::string>(mb_path / "clock_source" / "value")
-        .add_coerced_subscriber(boost::bind(&e300_impl::_update_clock_source, this, _1))
+        .add_coerced_subscriber(boost::bind(&e300_impl::_update_clock_source, this, boost::placeholders::_1))
         .set(e300::DEFAULT_CLOCK_SRC);
     static const std::vector<std::string> clock_sources =
         boost::assign::list_of("internal"); //external,gpsdo not supported
@@ -493,7 +493,7 @@ e300_impl::e300_impl(const uhd::device_addr_t &device_addr)
         .set(_eeprom_manager->get_mb_eeprom())  // set first...
         .add_coerced_subscriber(boost::bind(
             &e300_eeprom_manager::write_mb_eeprom,
-            _eeprom_manager, _1));
+            _eeprom_manager, boost::placeholders::_1));
 
     ////////////////////////////////////////////////////////////////////
     // dboard eeproms but not really
@@ -503,13 +503,13 @@ e300_impl::e300_impl(const uhd::device_addr_t &device_addr)
         .set(_eeprom_manager->get_db_eeprom())
         .add_coerced_subscriber(boost::bind(
             &e300_eeprom_manager::write_db_eeprom,
-            _eeprom_manager, _1));
+            _eeprom_manager, boost::placeholders::_1));
 
     _tree->create<dboard_eeprom_t>(mb_path / "dboards" / "A" / "tx_eeprom")
         .set(_eeprom_manager->get_db_eeprom())
         .add_coerced_subscriber(boost::bind(
             &e300_eeprom_manager::write_db_eeprom,
-            _eeprom_manager, _1));
+            _eeprom_manager, boost::placeholders::_1));
 
     _tree->create<dboard_eeprom_t>(mb_path / "dboards" / "A" / "gdb_eeprom").set(db_eeprom);
 
@@ -517,7 +517,7 @@ e300_impl::e300_impl(const uhd::device_addr_t &device_addr)
     // Access to global regs
     ////////////////////////////////////////////////////////////////////
     _tree->create<uint32_t>(mb_path / "global_regs" / "misc")
-        .add_coerced_subscriber(boost::bind(&global_regs::poke32, _global_regs, global_regs::SR_CORE_MISC, _1))
+        .add_coerced_subscriber(boost::bind(&global_regs::poke32, _global_regs, global_regs::SR_CORE_MISC, boost::placeholders::_1))
     ;
     _tree->create<uint32_t>(mb_path / "global_regs" / "pll")
         .set_publisher(boost::bind(&global_regs::peek32, _global_regs, global_regs::RB32_CORE_PLL))
@@ -527,8 +527,8 @@ e300_impl::e300_impl(const uhd::device_addr_t &device_addr)
     // clocking
     ////////////////////////////////////////////////////////////////////
     _tree->create<double>(mb_path / "tick_rate")
-        .add_coerced_subscriber(boost::bind(&device3_impl::update_tx_streamers, this, _1))
-        .add_coerced_subscriber(boost::bind(&device3_impl::update_rx_streamers, this, _1))
+        .add_coerced_subscriber(boost::bind(&device3_impl::update_tx_streamers, this, boost::placeholders::_1))
+        .add_coerced_subscriber(boost::bind(&device3_impl::update_rx_streamers, this, boost::placeholders::_1))
     ;
 
     //default some chains on -- needed for setup purposes

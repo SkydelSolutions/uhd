@@ -106,15 +106,15 @@ BOOST_AUTO_TEST_CASE(test_variables)
     BOOST_REQUIRE_THROW(
         expression_variable v_fail(
                 "foo", // Invalid token
-                boost::bind(&variable_get_type, _1), boost::bind(&variable_get_value, _1)
+                boost::bind(&variable_get_type, boost::placeholders::_1), boost::bind(&variable_get_value, boost::placeholders::_1)
         ),
         uhd::assertion_error
     );
 
     expression_variable v(
             "$spp", // The token
-            boost::bind(&variable_get_type, _1), // type-getter
-            boost::bind(&variable_get_value, _1) // value-getter
+            boost::bind(&variable_get_type, boost::placeholders::_1), // type-getter
+            boost::bind(&variable_get_value, boost::placeholders::_1) // value-getter
     );
     BOOST_CHECK_EQUAL(v.infer_type(), expression::TYPE_INT);
     BOOST_CHECK_EQUAL(v.eval().get_int(), 5);
@@ -130,15 +130,15 @@ BOOST_AUTO_TEST_CASE(test_container)
     BOOST_REQUIRE_EQUAL(l_false->to_bool(), false);
     expression_variable::sptr l_boolvar = boost::make_shared<expression_variable>(
         "$is_true",
-        boost::bind(&variable_get_type, _1),
-        boost::bind(&variable_get_value, _1)
+        boost::bind(&variable_get_type, boost::placeholders::_1),
+        boost::bind(&variable_get_value, boost::placeholders::_1)
     );
 
     // This will throw anytime it's evaluated:
     expression_variable::sptr l_failvar = boost::make_shared<expression_variable>(
         "$does_not_exist",
-        boost::bind(&variable_get_type, _1),
-        boost::bind(&variable_get_value, _1)
+        boost::bind(&variable_get_type, boost::placeholders::_1),
+        boost::bind(&variable_get_value, boost::placeholders::_1)
     );
 
     expression_container c;
@@ -419,8 +419,8 @@ BOOST_AUTO_TEST_CASE(test_sptrs)
 
     expression_variable::sptr v = expression_variable::make(
             "$spp",
-            boost::bind(&variable_get_type, _1), // type-getter
-            boost::bind(&variable_get_value, _1) // value-getter
+            boost::bind(&variable_get_type, boost::placeholders::_1), // type-getter
+            boost::bind(&variable_get_value, boost::placeholders::_1) // value-getter
     );
 
     c->add(v);

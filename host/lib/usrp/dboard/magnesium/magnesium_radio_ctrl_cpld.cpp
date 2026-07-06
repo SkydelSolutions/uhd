@@ -4,6 +4,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 
+#include <thread>
+
 #include "magnesium_radio_ctrl_impl.hpp"
 #include "magnesium_cpld_ctrl.hpp"
 #include "magnesium_constants.hpp"

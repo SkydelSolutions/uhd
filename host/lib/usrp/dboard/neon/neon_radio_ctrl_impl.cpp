@@ -19,6 +19,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/format.hpp>
 #include <sstream>
+#include <thread>
 #include <cmath>
 #include <cstdlib>
 

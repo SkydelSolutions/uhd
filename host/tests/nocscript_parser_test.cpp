@@ -53,8 +53,8 @@ expression_literal variable_get_value(const std::string &var_name)
     function_table::sptr ft = function_table::make(); \
     parser::sptr p = parser::make( \
             ft, \
-            boost::bind(&variable_get_type, _1), \
-            boost::bind(&variable_get_value, _1) \
+            boost::bind(&variable_get_type, boost::placeholders::_1), \
+            boost::bind(&variable_get_value, boost::placeholders::_1) \
     );
 
 BOOST_AUTO_TEST_CASE(test_fail)
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(test_multi_commmand)
 
     ft->register_function(
             "DUMMY",
-            boost::bind(&dummy_false, _1),
+            boost::bind(&dummy_false, boost::placeholders::_1),
             expression::TYPE_BOOL,
             no_args
     );
