@@ -269,6 +269,9 @@ if(MSVC)
     )
     # multi-threaded build and increases the number of addressable sections in an .obj file.
     set (COMPILE_FLAGS ${COMPILE_FLAGS} /MP /bigobj)
+
+    # suppress warning for complex using int16
+    add_compile_options(/D_SILENCE_NONFLOATING_COMPLEX_DEPRECATION_WARNING)
 endif(MSVC)
 
 if(CYGWIN)
@@ -339,7 +342,7 @@ set(Boost_ADDITIONAL_VERSIONS
 set(Boost_USE_STATIC_LIBS ON)
 if(MSVC)
     set(BOOST_ROOT "C:/Boost/boost_1_84_0")
-    set(Boost_LIBRARY_DIR "C:/Boost/boost_1_84_0/lib/lib")
+    set(Boost_LIBRARY_DIR "C:/Boost/boost_1_84_0/lib64-msvc-14.3")
 else(MSVC)
     set(BOOST_ROOT "/opt/boost_1_84_0")
     set(BOOST_INCLUDEDIR "/opt/boost_1_84_0/boost")

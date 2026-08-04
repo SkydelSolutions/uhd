@@ -117,7 +117,7 @@ namespace {
             // response packets.
             std::sprintf(
                 &send_buf[echo_prefix_offset],
-                ";%04lu,%04lu",
+                ";%04llu,%04llu",
                 seq_no++,
                 test_frame_size
             );
