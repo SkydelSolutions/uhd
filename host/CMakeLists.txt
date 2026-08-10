@@ -324,26 +324,24 @@ if(UNIX AND NOT BOOST_ROOT AND EXISTS "/usr/lib64")
     list(APPEND BOOST_LIBRARYDIR "/usr/lib64") #fedora 64-bit fix
 endif(UNIX AND NOT BOOST_ROOT AND EXISTS "/usr/lib64")
 
-if(MSVC)
-    set(BOOST_ALL_DYN_LINK "${BOOST_ALL_DYN_LINK}" CACHE BOOL "boost enable dynamic linking")
-    if(BOOST_ALL_DYN_LINK)
-        add_definitions(-DBOOST_ALL_DYN_LINK) #setup boost auto-linking in msvc
-    else(BOOST_ALL_DYN_LINK)
-        set(BOOST_REQUIRED_COMPONENTS) #empty components list for static link
-    endif(BOOST_ALL_DYN_LINK)
-endif(MSVC)
-
 set(Boost_ADDITIONAL_VERSIONS
     "1.46.0" "1.46" "1.47.0" "1.47" "1.48.0" "1.48" "1.48.0" "1.49" "1.50.0" "1.50"
     "1.51.0" "1.51" "1.52.0" "1.52" "1.53.0" "1.53" "1.54.0" "1.54" "1.55.0" "1.55"
     "1.56.0" "1.56" "1.57" "1.57" "1.58" "1.59" "1.60" "1.61" "1.62" "1.63" "1.68" "1.84"
 )
 
-set(Boost_USE_STATIC_LIBS ON)
 if(MSVC)
-    set(BOOST_ROOT "C:/Boost/boost_1_84_0")
-    set(Boost_LIBRARY_DIR "C:/Boost/boost_1_84_0/lib64-msvc-14.3")
+    set(BOOST_ROOT "C:/Program Files/Boost/boost_1_84_0")
+    set(Boost_LIBRARY_DIR "C:/Program Files/Boost/boost_1_84_0/lib64-msvc-14.3")
+
+    # FIXED: Force dynamic link for MSVC so Boost.Python and Boost components
+    # properly populate Boost_LIBRARIES and link against DLL import libs.
+    set(BOOST_ALL_DYN_LINK ON CACHE BOOL "boost enable dynamic linking" FORCE)
+    add_definitions(-DBOOST_ALL_DYN_LINK)
+    set(Boost_USE_STATIC_LIBS OFF)
+    set(Boost_USE_MULTITHREADED ON)
 else(MSVC)
+    set(Boost_USE_STATIC_LIBS ON)
     set(BOOST_ROOT "/opt/boost_1_84_0")
     set(BOOST_INCLUDEDIR "/opt/boost_1_84_0/boost")
     set(BOOST_LIBRARYDIR "/opt/boost_1_84_0/lib")
